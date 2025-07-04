@@ -1,114 +1,974 @@
+Make it less like it was written by AI, more factual. More practice advice tips. More understanding that this site is for DIY people who do not need to be told to take it somewhere else
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Boy Suits: Real-World Fit & Alteration Guide</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #0f172a;
-      color: #e2e8f0;
-    }
-    .gradient-bg {
-      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    }
-    .card-dark {
-      background-color: #1e293b;
-      border: 1px solid #334155;
-    }
-    .text-accent { color: #06b6d4; }
-    .tip-box {
-      background: #0f766e;
-      border-left: 4px solid #06b6d4;
-      padding: 1rem;
-      border-radius: 0.375rem;
-    }
-    .warning-box {
-      background: #7c2d12;
-      border-left: 4px solid #f59e0b;
-      padding: 1rem;
-      border-radius: 0.375rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boy Suits: The Complete Mom's Guide to Fitting and Alterations</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+        .card-dark {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+        }
+        .text-accent {
+            color: #06b6d4;
+        }
+        .bg-accent {
+            background-color: #06b6d4;
+        }
+        .border-accent {
+            border-color: #06b6d4;
+        }
+        .shadow-custom {
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+        }
+        .section-divider {
+            border-bottom: 2px solid #334155;
+            margin: 3rem 0;
+        }
+        .tip-box {
+            background: linear-gradient(45deg, #0f766e, #134e4a);
+            border-left: 4px solid #06b6d4;
+        }
+        .warning-box {
+            background: linear-gradient(45deg, #7c2d12, #92400e);
+            border-left: 4px solid #f59e0b;
+        }
+        .step-number {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+        .image-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .image-container img {
+            transition: transform 0.3s ease;
+        }
+        .image-container:hover img {
+            transform: scale(1.02);
+        }
+        .measurement-table {
+            background-color: #1e293b;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .measurement-table th,
+        .measurement-table td {
+            border: 1px solid #334155;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .measurement-table th {
+            background-color: #0f172a;
+            color: #06b6d4;
+            font-weight: 600;
+        }
+        .measurement-table tr:nth-child(even) {
+            background-color: #0f172a;
+        }
+        .progress-bar {
+            background-color: #334155;
+            height: 0.5rem;
+            border-radius: 0.25rem;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #06b6d4, #0891b2);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        @media print {
+            body {
+                background-color: white !important;
+                color: black !important;
+            }
+            .gradient-bg, .card-dark {
+                background-color: #f8f9fa !important;
+                border: 1px solid #dee2e6 !important;
+            }
+            .text-accent {
+                color: #0066cc !important;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100">
-  <header class="gradient-bg p-6 text-center">
-    <h1 class="text-4xl font-bold text-white">Boy Suits: Real-World Fit & Alteration Guide</h1>
-    <p class="text-gray-400 mt-2 text-sm">No fluff. No filler. Just practical advice for people who'd rather do it themselves.</p>
-  </header>
-
-  <main class="max-w-4xl mx-auto px-6 py-12">
-    <section class="card-dark p-6 mb-12 rounded">
-      <h2 class="text-2xl text-accent font-bold mb-4">Before You Start</h2>
-      <p class="mb-4">You don't need a degree in tailoring to make a kid’s suit fit right. Most alterations—hems, waist tightening, sleeve shortening—are mechanical jobs. With some decent tools and a bit of patience, you'll do better than most dry cleaners.</p>
-      <ul class="list-disc list-inside text-sm text-gray-300 space-y-1">
-        <li>Use sharp tools. Dull scissors = ruined fabric edges.</li>
-        <li>Press every seam as you go. It makes a huge difference in the final look.</li>
-        <li>Don’t guess—measure. Twice.</li>
-        <li>Stick to straight seams first. Leave shoulder work and lapel reshaping to pros (or skip entirely).</li>
-      </ul>
-    </section>
-
-    <section class="card-dark p-6 mb-12 rounded">
-      <h2 class="text-2xl text-accent font-bold mb-4">Common Alterations: What You Can Actually Do</h2>
-      <p class="mb-4">Here’s what works well at home and what tends to waste time:</p>
-      <div class="grid md:grid-cols-3 gap-4 text-sm">
-        <div class="border border-green-500 p-4 rounded">
-          <h3 class="text-green-400 font-semibold mb-2">✅ Beginner-Friendly</h3>
-          <ul class="space-y-1 text-gray-300">
-            <li>Hemming pant legs</li>
-            <li>Shortening sleeves (no buttons)</li>
-            <li>Elastic waistband adjustments</li>
-            <li>Taking in pant sides</li>
-          </ul>
+<body class="bg-gray-900 text-gray-100 leading-relaxed">
+    <!-- Header -->
+    <header class="gradient-bg shadow-custom">
+        <div class="container mx-auto px-6 py-8">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4 text-white">
+                    <i class="fas fa-tshirt text-accent mr-3"></i>
+                    Boy Suits: The Complete Mom's Guide
+                </h1>
+                <p class="text-xl md:text-2xl text-gray-300 mb-6">
+                    Master the Art of Fitting and Alterations for Your Growing Boy
+                </p>
+                <div class="flex justify-center items-center space-x-4 text-sm text-gray-400">
+                    <span><i class="fas fa-clock mr-1"></i> Comprehensive Guide</span>
+                    <span><i class="fas fa-tools mr-1"></i> DIY Friendly</span>
+                    <span><i class="fas fa-heart mr-1"></i> Made for Moms</span>
+                </div>
+            </div>
         </div>
-        <div class="border border-yellow-500 p-4 rounded">
-          <h3 class="text-yellow-400 font-semibold mb-2">⚠️ Intermediate</h3>
-          <ul class="space-y-1 text-gray-300">
-            <li>Shortening sleeves with buttons</li>
-            <li>Jacket length mods</li>
-            <li>Tapering pant legs</li>
-          </ul>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12">
+        
+        <!-- Introduction Section -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-star mr-3"></i>Welcome to Your Suit Fitting Journey
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <p class="text-lg mb-4 leading-relaxed">
+                            As a mom, you understand that special occasions demand special attire. Whether it's a wedding, graduation, or formal event, getting your boy's suit to fit perfectly can be challenging and expensive when relying solely on professional tailors.
+                        </p>
+                        <p class="text-lg mb-4 leading-relaxed">
+                            This comprehensive guide will empower you with the knowledge and skills to ensure your son looks his absolute best. From understanding proper fit to executing precise alterations, we'll walk through every step of the process together.
+                        </p>
+                        <div class="tip-box p-4 rounded-lg">
+                            <h3 class="font-semibold mb-2 text-white">
+                                <i class="fas fa-lightbulb mr-2"></i>Why This Guide Matters
+                            </h3>
+                            <ul class="text-sm space-y-1">
+                                <li>• Save hundreds of dollars on professional alterations</li>
+                                <li>• Ensure perfect fit for your growing child</li>
+                                <li>• Build confidence in your sewing abilities</li>
+                                <li>• Create lasting memories through this bonding experience</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="image-container">
+                        <img src="https://m.media-amazon.com/images/I/61L95u7bh5L._UY1000_.jpg" alt="Well-fitted boy's suit example" class="w-full h-64 object-cover rounded-lg">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Understanding Suit Components -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-puzzle-piece mr-3"></i>Understanding Boy Suit Components
+                </h2>
+                <div class="grid md:grid-cols-3 gap-6 mb-8">
+                    <div class="card-dark border rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-3 text-accent">
+                            <i class="fas fa-vest mr-2"></i>Suit Jacket
+                        </h3>
+                        <p class="text-sm mb-4">The foundation of any suit, the jacket should fit snugly through the shoulders and chest while allowing comfortable movement.</p>
+                        <ul class="text-sm space-y-1 text-gray-300">
+                            <li>• Shoulder seams should sit at shoulder edge</li>
+                            <li>• No pulling or bunching across the back</li>
+                            <li>• Sleeve length shows 1/4 inch of shirt cuff</li>
+                            <li>• Buttoned jacket should close without strain</li>
+                        </ul>
+                    </div>
+                    <div class="card-dark border rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-3 text-accent">
+                            <i class="fas fa-tshirt mr-2"></i>Dress Shirt
+                        </h3>
+                        <p class="text-sm mb-4">The shirt provides the foundation layer and should complement the suit's fit perfectly.</p>
+                        <ul class="text-sm space-y-1 text-gray-300">
+                            <li>• Collar should sit flush against neck</li>
+                            <li>• Shoulder seams align with natural shoulder</li>
+                            <li>• Sleeve length reaches wrist bone</li>
+                            <li>• Body should be fitted but not tight</li>
+                        </ul>
+                    </div>
+                    <div class="card-dark border rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-3 text-accent">
+                            <i class="fas fa-user-tie mr-2"></i>Trousers
+                        </h3>
+                        <p class="text-sm mb-4">Properly fitted trousers create a clean, polished silhouette from waist to hem.</p>
+                        <ul class="text-sm space-y-1 text-gray-300">
+                            <li>• Waist sits comfortably at natural waistline</li>
+                            <li>• No bunching or sagging in the seat</li>
+                            <li>• Proper break at the ankle</li>
+                            <li>• Comfortable movement when sitting</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="image-container">
+                    <img src="https://m.media-amazon.com/images/S/aplus-media-library-service-media/5c9d6aa5-5c7c-4b4e-b3b9-42ce117a6b5d.__CR0,0,970,600_PT0_SX970_V1___.jpg" alt="Boy suit components breakdown" class="w-full h-64 object-cover rounded-lg">
+                </div>
+            </div>
+        </section>
+
+        <!-- Proper Fit Guidelines -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-ruler-combined mr-3"></i>Proper Fit Guidelines: What to Look For
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-white">The Perfect Fit Checklist</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">1</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Shoulder Alignment</h4>
+                                    <p class="text-sm text-gray-300">The jacket's shoulder seam should align perfectly with your child's natural shoulder point. This is the most critical fit element and the hardest to alter.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">2</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Chest Comfort</h4>
+                                    <p class="text-sm text-gray-300">When buttoned, you should be able to slip your hand inside the jacket without creating stress lines. The fabric should lay flat across the chest.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">3</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Sleeve Length</h4>
+                                    <p class="text-sm text-gray-300">Jacket sleeves should end approximately 1/4 inch above the shirt cuff, allowing the shirt to peek out elegantly.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">4</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Trouser Length</h4>
+                                    <p class="text-sm text-gray-300">Pants should break gently on the shoe, creating a slight crease. For boys, a slight break or no break looks most modern and clean.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="image-container">
+                        <img src="https://i.redd.it/xz6e4zcn44241.jpg" alt="Comprehensive suit fit guide" class="w-full h-96 object-cover rounded-lg">
+                    </div>
+                </div>
+                
+                <div class="mt-8 warning-box p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2 text-white">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Common Fit Mistakes to Avoid
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <h4 class="font-medium text-yellow-300 mb-2">Sizing Up for Growth</h4>
+                            <p>While tempting, buying a suit too large hoping he'll "grow into it" creates an unflattering silhouette and defeats the purpose of formal wear.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-yellow-300 mb-2">Ignoring Proportions</h4>
+                            <p>A suit that's properly proportioned to your child's current build will always look better than one that's technically "the right size" but poorly proportioned.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Taking Measurements -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-ruler mr-3"></i>Taking Accurate Measurements
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-white">Essential Measurements Guide</h3>
+                        <p class="text-lg mb-4 leading-relaxed">
+                            Accurate measurements are the foundation of perfect fit. Take measurements over a thin, well-fitting t-shirt for the most accurate results. Have your child stand naturally with arms at his sides.
+                        </p>
+                        <div class="tip-box p-4 rounded-lg mb-4">
+                            <h4 class="font-semibold mb-2 text-white">
+                                <i class="fas fa-tips mr-2"></i>Pro Tips for Measuring
+                            </h4>
+                            <ul class="text-sm space-y-1">
+                                <li>• Use a flexible measuring tape</li>
+                                <li>• Keep the tape snug but not tight</li>
+                                <li>• Take measurements twice to ensure accuracy</li>
+                                <li>• Have your child stand straight and relaxed</li>
+                                <li>• Record measurements immediately</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="image-container">
+                        <img src="https://cdn.bgfashion.net/img16/BoysSuitMeasures_1.jpg" alt="Boy suit measurement guide" class="w-full h-80 object-cover rounded-lg">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="measurement-table w-full">
+                        <thead>
+                            <tr>
+                                <th class="text-left">Measurement</th>
+                                <th class="text-left">How to Measure</th>
+                                <th class="text-left">Key Points</th>
+                                <th class="text-left">Record Here</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-medium">Chest</td>
+                                <td>Around the fullest part of the chest, under the arms</td>
+                                <td>Keep tape parallel to floor</td>
+                                <td class="border-accent border-2 p-2">_____ inches</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">Waist</td>
+                                <td>Around the natural waistline</td>
+                                <td>Find the narrowest part of torso</td>
+                                <td class="border-accent border-2 p-2">_____ inches</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">Inseam</td>
+                                <td>From crotch to desired hem length</td>
+                                <td>Measure along inside leg</td>
+                                <td class="border-accent border-2 p-2">_____ inches</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">Outseam</td>
+                                <td>From waist to desired hem length</td>
+                                <td>Measure along outside leg</td>
+                                <td class="border-accent border-2 p-2">_____ inches</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">Sleeve Length</td>
+                                <td>From shoulder point to wrist bone</td>
+                                <td>Arm should be slightly bent</td>
+                                <td class="border-accent border-2 p-2">_____ inches</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">Neck</td>
+                                <td>Around the base of neck</td>
+                                <td>Add 1/2 inch for comfort</td>
+                                <td class="border-accent border-2 p-2">_____ inches</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">Shoulder</td>
+                                <td>From shoulder point to shoulder point across back</td>
+                                <td>Measure across the back</td>
+                                <td class="border-accent border-2 p-2">_____ inches</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-8 grid md:grid-cols-2 gap-6">
+                    <div class="image-container">
+                        <img src="https://www.childrensspecialoccasionwear.co.uk/user/suit-measuring.png" alt="Detailed measurement diagram" class="w-full h-64 object-cover rounded-lg">
+                    </div>
+                    <div class="image-container">
+                        <img src="https://www.aceclothing.co.uk/images/measuringGuide-boys.jpg" alt="Boys clothing measurement guide" class="w-full h-64 object-cover rounded-lg">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tools and Equipment -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-toolbox mr-3"></i>Essential Tools and Equipment
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-white">Your Alteration Toolkit</h3>
+                        <p class="text-lg mb-4 leading-relaxed">
+                            Having the right tools makes all the difference in achieving professional-looking results. Most of these items are affordable and will serve you well for years to come.
+                        </p>
+                        <div class="space-y-4">
+                            <div class="card-dark border rounded-lg p-4">
+                                <h4 class="font-semibold text-accent mb-2">
+                                    <i class="fas fa-cut mr-2"></i>Cutting Tools
+                                </h4>
+                                <ul class="text-sm space-y-1 text-gray-300">
+                                    <li>• Sharp fabric scissors (8-9 inches)</li>
+                                    <li>• Small embroidery scissors for detail work</li>
+                                    <li>• Rotary cutter with cutting mat</li>
+                                    <li>• Seam ripper for removing stitches</li>
+                                </ul>
+                            </div>
+                            <div class="card-dark border rounded-lg p-4">
+                                <h4 class="font-semibold text-accent mb-2">
+                                    <i class="fas fa-ruler mr-2"></i>Measuring Tools
+                                </h4>
+                                <ul class="text-sm space-y-1 text-gray-300">
+                                    <li>• Flexible measuring tape</li>
+                                    <li>• Clear quilting ruler</li>
+                                    <li>• Tailor's chalk or fabric markers</li>
+                                    <li>• French curve for curved seams</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="image-container">
+                        <img src="https://sewguide.com/wp-content/uploads/2022/12/sewing-tools-3.jpg" alt="Essential sewing tools" class="w-full h-80 object-cover rounded-lg">
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6 mb-8">
+                    <div class="card-dark border rounded-lg p-4">
+                        <h4 class="font-semibold text-accent mb-2">
+                            <i class="fas fa-sewing-machine mr-2"></i>Sewing Essentials
+                        </h4>
+                        <ul class="text-sm space-y-1 text-gray-300">
+                            <li>• Sewing machine (basic model sufficient)</li>
+                            <li>• Hand sewing needles (various sizes)</li>
+                            <li>• Quality thread matching fabric</li>
+                            <li>• Thimble for hand sewing</li>
+                            <li>• Buttonhole foot for machine</li>
+                        </ul>
+                    </div>
+                    <div class="card-dark border rounded-lg p-4">
+                        <h4 class="font-semibold text-accent mb-2">
+                            <i class="fas fa-thumbtack mr-2"></i>Marking & Pinning
+                        </h4>
+                        <ul class="text-sm space-y-1 text-gray-300">
+                            <li>• Sharp straight pins</li>
+                            <li>• Safety pins for temporary fixes</li>
+                            <li>• Fabric markers or tailor's chalk</li>
+                            <li>• Basting spray for temporary bonds</li>
+                            <li>• Pin cushion or magnetic holder</li>
+                        </ul>
+                    </div>
+                    <div class="card-dark border rounded-lg p-4">
+                        <h4 class="font-semibold text-accent mb-2">
+                            <i class="fas fa-iron mr-2"></i>Pressing Tools
+                        </h4>
+                        <ul class="text-sm space-y-1 text-gray-300">
+                            <li>• Steam iron with variable heat</li>
+                            <li>• Pressing cloth for delicate fabrics</li>
+                            <li>• Ironing board or pressing pad</li>
+                            <li>• Tailor's ham for curved seams</li>
+                            <li>• Pressing cloth to protect fabric</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="image-container">
+                    <img src="https://www.realsimple.com/thmb/NtcdnrtZjaNabQdKKc5Ah5VW-ng=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/tailoring-supplies-dc4f24993a6d4c6bbb647caf78f58a11.jpg" alt="Professional tailoring supplies" class="w-full h-64 object-cover rounded-lg">
+                </div>
+            </div>
+        </section>
+
+        <!-- Common Alterations -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-magic mr-3"></i>Common Alterations: What You Can Do at Home
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-white">Alteration Difficulty Guide</h3>
+                        <p class="text-lg mb-4 leading-relaxed">
+                            Not all alterations are created equal. Some are perfect for beginners, while others require more advanced skills. Let's break down what you can tackle at home with confidence.
+                        </p>
+                        <div class="space-y-4">
+                            <div class="card-dark border border-green-500 rounded-lg p-4">
+                                <h4 class="font-semibold text-green-400 mb-2">
+                                    <i class="fas fa-check-circle mr-2"></i>Beginner Friendly
+                                </h4>
+                                <ul class="text-sm space-y-1 text-gray-300">
+                                    <li>• Hemming pants length</li>
+                                    <li>• Shortening sleeves</li>
+                                    <li>• Taking in side seams slightly</li>
+                                    <li>• Adjusting trouser waist with elastic</li>
+                                </ul>
+                            </div>
+                            <div class="card-dark border border-yellow-500 rounded-lg p-4">
+                                <h4 class="font-semibold text-yellow-400 mb-2">
+                                    <i class="fas fa-exclamation-circle mr-2"></i>Intermediate
+                                </h4>
+                                <ul class="text-sm space-y-1 text-gray-300">
+                                    <li>• Tapering trouser legs</li>
+                                    <li>• Adjusting jacket length</li>
+                                    <li>• Taking in jacket back seam</li>
+                                    <li>• Shortening jacket sleeves with buttonholes</li>
+                                </ul>
+                            </div>
+                            <div class="card-dark border border-red-500 rounded-lg p-4">
+                                <h4 class="font-semibold text-red-400 mb-2">
+                                    <i class="fas fa-times-circle mr-2"></i>Leave to Professionals
+                                </h4>
+                                <ul class="text-sm space-y-1 text-gray-300">
+                                    <li>• Adjusting shoulder width</li>
+                                    <li>• Significant chest/waist alterations</li>
+                                    <li>• Armhole adjustments</li>
+                                    <li>• Complex jacket structure changes</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="image-container">
+                        <img src="https://bespokeunit.com/wp-content/uploads/2015/10/Suit-Jacket-Tailoring-Guide.jpg" alt="Suit jacket alteration guide" class="w-full h-96 object-cover rounded-lg">
+                    </div>
+                </div>
+
+                <div class="warning-box p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2 text-white">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Before You Start: Important Considerations
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <h4 class="font-medium text-yellow-300 mb-2">Test on Scraps First</h4>
+                            <p>Always test your technique on fabric scraps or less visible areas before working on the main garment.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-yellow-300 mb-2">Measure Twice, Cut Once</h4>
+                            <p>This old adage is especially true for alterations. Double-check all measurements and markings before cutting.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sleeve Alterations -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-hand-paper mr-3"></i>Sleeve Alterations: Step-by-Step Guide
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-white">Shortening Jacket Sleeves</h3>
+                        <p class="text-lg mb-4 leading-relaxed">
+                            Shortening sleeves is one of the most common alterations needed for boy's suits. The key is maintaining the proportions while achieving the perfect length.
+                        </p>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">1</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Determine Correct Length</h4>
+                                    <p class="text-sm text-gray-300">With the jacket on, mark where the sleeve should end - typically showing 1/4 inch of shirt cuff.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">2</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Mark and Measure</h4>
+                                    <p class="text-sm text-gray-300">Turn the jacket inside out. Mark the new hemline, adding 1 inch for hem allowance.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">3</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Remove Existing Hem</h4>
+                                    <p class="text-sm text-gray-300">Carefully use a seam ripper to remove the original hem, preserving the buttons if present.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">4</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Cut and Hem</h4>
+                                    <p class="text-sm text-gray-300">Cut the excess fabric, fold up the new hem, and secure with blind hem stitch or machine.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="image-container">
+                        <img src="https://amynicolestudio.com/wp-content/uploads/2023/05/PINTERESTsleevehem.jpg" alt="Sleeve hemming tutorial" class="w-full h-80 object-cover rounded-lg">
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="image-container">
+                        <img src="https://www.themodestman.com/wp-content/uploads/2012/07/Jackets-and-Blazers-Alterations-Cost.png" alt="Jacket alteration cost guide" class="w-full h-64 object-cover rounded-lg">
+                    </div>
+                    <div class="tip-box p-4 rounded-lg">
+                        <h3 class="font-semibold mb-2 text-white">
+                            <i class="fas fa-lightbulb mr-2"></i>Pro Tips for Sleeve Alterations
+                        </h3>
+                        <ul class="text-sm space-y-1">
+                            <li>• For sleeves with functional buttons, shorten from the shoulder for best results</li>
+                            <li>• Keep the original button spacing proportional</li>
+                            <li>• Use a pressing cloth when ironing to avoid shine</li>
+                            <li>• Consider the jacket's overall proportions when shortening</li>
+                            <li>• Always try the jacket on before final stitching</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pants Hemming -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-ruler-vertical mr-3"></i>Pants Hemming: Creating the Perfect Break
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-white">Understanding Pant Breaks</h3>
+                        <p class="text-lg mb-4 leading-relaxed">
+                            The "break" refers to how the pant leg rests on the shoe. For boys' suits, the right break creates a clean, modern look that's neither too short nor too long.
+                        </p>
+                        <div class="space-y-4">
+                            <div class="card-dark border rounded-lg p-4">
+                                <h4 class="font-semibold text-accent mb-2">No Break (Recommended for Boys)</h4>
+                                <p class="text-sm text-gray-300">Pants end right at the shoe with no fabric touching the ground. Creates a clean, modern appearance.</p>
+                            </div>
+                            <div class="card-dark border rounded-lg p-4">
+                                <h4 class="font-semibold text-accent mb-2">Slight Break (Classic Option)</h4>
+                                <p class="text-sm text-gray-300">Pant leg rests gently on the shoe, creating a small horizontal crease. Timeless and appropriate for most occasions.</p>
+                            </div>
+                            <div class="card-dark border rounded-lg p-4">
+                                <h4 class="font-semibold text-accent mb-2">Full Break (Avoid for Boys)</h4>
+                                <p class="text-sm text-gray-300">Pants bunch significantly on the shoe. This look can overwhelm a boy's proportions and appear sloppy.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="image-container">
+                        <img src="https://www.themodestman.com/wp-content/uploads/2012/07/Pants-Alterations-Cost.png" alt="Pants alterations guide" class="w-full h-96 object-cover rounded-lg">
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-2xl font-semibold mb-4 text-white">Step-by-Step Hemming Process</h3>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">1</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Proper Fitting</h4>
+                                    <p class="text-sm text-gray-300">Have your child wear the dress shoes he'll wear with the suit. Stand on a hard surface for accurate measurement.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">2</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Mark the Hemline</h4>
+                                    <p class="text-sm text-gray-300">Use chalk or pins to mark the desired length. For no break, pants should just touch the shoe.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">3</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Measure and Cut</h4>
+                                    <p class="text-sm text-gray-300">Add 1.5 inches below the marked line for hem allowance. Cut excess fabric with sharp scissors.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">4</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Create the Hem</h4>
+                                    <p class="text-sm text-gray-300">Fold up the hem, press with iron, and secure with blind hem stitch for invisible finish.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="image-container">
+                            <img src="https://alterations-express.com/wp-content/uploads/2022/06/shutterstock_1324592441-scaled.jpg" alt="Pants hemming process" class="w-full h-64 object-cover rounded-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="warning-box p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2 text-white">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Hemming Best Practices
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <h4 class="font-medium text-yellow-300 mb-2">Consider Growth</h4>
+                            <p>For growing boys, consider leaving extra fabric in the hem for future lengthening. A 2-inch hem allows for adjustments.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-yellow-300 mb-2">Match Thread Color</h4>
+                            <p>Use thread that matches the pant color exactly. Test the color match in good lighting before stitching.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Waist Adjustments -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-expand-arrows-alt mr-3"></i>Waist Adjustments: Perfect Fit Solutions
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-white">Adjustable Waist Solutions</h3>
+                        <p class="text-lg mb-4 leading-relaxed">
+                            Growing boys often need waist adjustments more than any other alteration. Fortunately, there are several approaches depending on how much adjustment is needed.
+                        </p>
+                        <div class="space-y-4">
+                            <div class="card-dark border rounded-lg p-4">
+                                <h4 class="font-semibold text-accent mb-2">
+                                    <i class="fas fa-plus-circle mr-2"></i>Taking In (Making Smaller)
+                                </h4>
+                                <p class="text-sm text-gray-300 mb-2">For pants that are too large around the waist:</p>
+                                <ul class="text-sm space-y-1 text-gray-300">
+                                    <li>• Side seam adjustments (up to 2 inches total)</li>
+                                    <li>• Center back seam adjustments</li>
+                                    <li>• Darts for minor adjustments</li>
+                                    <li>• Elastic waistband inserts</li>
+                                </ul>
+                            </div>
+                            <div class="card-dark border rounded-lg p-4">
+                                <h4 class="font-semibold text-accent mb-2">
+                                    <i class="fas fa-minus-circle mr-2"></i>Letting Out (Making Larger)
+                                </h4>
+                                <p class="text-sm text-gray-300 mb-2">For pants that are too tight around the waist:</p>
+                                <ul class="text-sm space-y-1 text-gray-300">
+                                    <li>• Check available seam allowance first</li>
+                                    <li>• Side seam expansion (limited by fabric)</li>
+                                    <li>• Waistband extenders</li>
+                                    <li>• Elastic side panels</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="image-container">
+                        <img src="https://m.media-amazon.com/images/I/61re1qz7XFL._UY1000_.jpg" alt="Adjustable waist suit pants" class="w-full h-80 object-cover rounded-lg">
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-2xl font-semibold mb-4 text-white">Step-by-Step: Taking In Side Seams</h3>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">1</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Determine Amount</h4>
+                                    <p class="text-sm text-gray-300">Pinch excess fabric at the side seams. Divide total adjustment by 4 (two sides, two seams each).</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">2</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Mark New Seamline</h4>
+                                    <p class="text-sm text-gray-300">Turn pants inside out. Mark the new seamline with chalk, maintaining the original curve.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">3</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Baste and Test</h4>
+                                    <p class="text-sm text-gray-300">Baste the new seam temporarily. Try on pants to ensure proper fit before final stitching.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="step-number">4</div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Sew and Finish</h4>
+                                    <p class="text-sm text-gray-300">Sew the final seam, trim excess fabric, and finish edges to prevent fraying.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tip-box p-4 rounded-lg">
+                            <h3 class="font-semibold mb-2 text-white">
+                                <i class="fas fa-lightbulb mr-2"></i>Waist Adjustment Tips
+                            </h3>
+                            <ul class="text-sm space-y-1">
+                                <li>• Never take in more than 2 inches total at the waist</li>
+                                <li>• Maintain the original rise and proportions</li>
+                                <li>• Consider adjustable waistbands for growing children</li>
+                                <li>• Check that pockets still function properly after adjustments</li>
+                                <li>• Press all seams carefully for professional appearance</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Troubleshooting -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-question-circle mr-3"></i>Troubleshooting Common Issues
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-white">Fit Problems and Solutions</h3>
+                        <div class="space-y-4">
+                            <div class="card-dark border border-red-400 rounded-lg p-4">
+                                <h4 class="font-semibold text-red-400 mb-2">Problem: Jacket Pulls Across Chest</h4>
+                                <p class="text-sm text-gray-300 mb-2">Causes: Jacket too small, incorrect button stance</p>
+                                <p class="text-sm text-green-400">Solution: Let out side seams if possible, or size up jacket</p>
+                            </div>
+                            <div class="card-dark border border-red-400 rounded-lg p-4">
+                                <h4 class="font-semibold text-red-400 mb-2">Problem: Bunching at Jacket Back</h4>
+                                <p class="text-sm text-gray-300 mb-2">Causes: Jacket too large, poor posture</p>
+                                <p class="text-sm text-green-400">Solution: Take in center back seam, check shoulder fit</p>
+                            </div>
+                            <div class="card-dark border border-red-400 rounded-lg p-4">
+                                <h4 class="font-semibold text-red-400 mb-2">Problem: Pants Sag in Seat</h4>
+                                <p class="text-sm text-gray-300 mb-2">Causes: Incorrect rise, waist too large</p>
+                                <p class="text-sm text-green-400">Solution: Adjust waist, check inseam length</p>
+                            </div>
+                            <div class="card-dark border border-red-400 rounded-lg p-4">
+                                <h4 class="font-semibold text-red-400 mb-2">Problem: Sleeves Too Short After Alteration</h4>
+                                <p class="text-sm text-gray-300 mb-2">Causes: Measurement error, insufficient fabric</p>
+                                <p class="text-sm text-green-400">Solution: Add decorative cuff, consider false cuffs</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-white">When to Seek Professional Help</h3>
+                        <div class="warning-box p-4 rounded-lg mb-4">
+                            <h4 class="font-semibold mb-2 text-yellow-300">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>Complex Alterations
+                            </h4>
+                            <p class="text-sm">Some alterations require professional expertise and specialized equipment. Don't hesitate to seek help for:</p>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-times text-red-400"></i>
+                                <span class="text-sm">Shoulder adjustments</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-times text-red-400"></i>
+                                <span class="text-sm">Chest/back major adjustments</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-times text-red-400"></i>
+                                <span class="text-sm">Armhole modifications</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-times text-red-400"></i>
+                                <span class="text-sm">Jacket length changes over 2 inches</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-times text-red-400"></i>
+                                <span class="text-sm">Waist adjustments over 2 inches</span>
+                            </div>
+                        </div>
+                        <div class="tip-box p-4 rounded-lg mt-4">
+                            <h4 class="font-semibold mb-2 text-white">
+                                <i class="fas fa-lightbulb mr-2"></i>Cost-Benefit Analysis
+                            </h4>
+                            <p class="text-sm">Before attempting complex alterations, consider the cost of professional tailoring versus purchasing a better-fitting suit. Sometimes starting fresh is more economical.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final Tips -->
+        <section class="mb-16">
+            <div class="card-dark rounded-lg p-8 shadow-custom">
+                <h2 class="text-3xl font-bold mb-6 text-accent">
+                    <i class="fas fa-star mr-3"></i>Final Tips for Success
+                </h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="card-dark border rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-3 text-accent">
+                            <i class="fas fa-clock mr-2"></i>Timing is Everything
+                        </h3>
+                        <ul class="text-sm space-y-2 text-gray-300">
+                            <li>• Start alterations 2-3 weeks before the event</li>
+                            <li>• Allow time for multiple fittings</li>
+                            <li>• Consider growth spurts in timing</li>
+                            <li>• Have backup plans for last-minute changes</li>
+                        </ul>
+                    </div>
+                    <div class="card-dark border rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-3 text-accent">
+                            <i class="fas fa-heart mr-2"></i>Building Confidence
+                        </h3>
+                        <ul class="text-sm space-y-2 text-gray-300">
+                            <li>• Practice on old clothes first</li>
+                            <li>• Start with simple alterations</li>
+                            <li>• Take photos to track progress</li>
+                            <li>• Celebrate small victories</li>
+                        </ul>
+                    </div>
+                    <div class="card-dark border rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-3 text-accent">
+                            <i class="fas fa-shield-alt mr-2"></i>Quality Assurance
+                        </h3>
+                        <ul class="text-sm space-y-2 text-gray-300">
+                            <li>• Press all seams professionally</li>
+                            <li>• Check for loose threads</li>
+                            <li>• Ensure all alterations are secure</li>
+                            <li>• Do a final fitting before the event</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-8 gradient-bg rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4 text-white text-center">
+                        <i class="fas fa-trophy mr-2"></i>You've Got This!
+                    </h3>
+                    <p class="text-lg text-center text-gray-200 leading-relaxed">
+                        Alterations may seem daunting at first, but with patience, practice, and the right approach, you can achieve professional-looking results. Remember, every expert was once a beginner. Your son will look amazing in his perfectly fitted suit, and you'll have the satisfaction of knowing you created that perfect fit with your own hands.
+                    </p>
+                </div>
+
+                <div class="mt-8 grid md:grid-cols-2 gap-6">
+                    <div class="tip-box p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2 text-white">
+                            <i class="fas fa-bookmark mr-2"></i>Keep This Guide Handy
+                        </h4>
+                        <p class="text-sm">Save this guide for future reference. As your son grows, you'll likely need to make adjustments to multiple suits over the years. Having a reliable reference will make each alteration easier than the last.</p>
+                    </div>
+                    <div class="tip-box p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2 text-white">
+                            <i class="fas fa-users mr-2"></i>Share Your Success
+                        </h4>
+                        <p class="text-sm">Don't be afraid to share your alteration successes with other moms. Your experience and tips can help others achieve the same great results for their children.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="gradient-bg mt-16 py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p class="text-gray-300">
+                <i class="fas fa-sewing-machine mr-2"></i>
+                Happy Tailoring! Your son's perfect suit fit is just a few alterations away.
+            </p>
+            <p class="text-sm text-gray-400 mt-2">
+                Remember: Measure twice, cut once, and trust your instincts.
+            </p>
         </div>
-        <div class="border border-red-500 p-4 rounded">
-          <h3 class="text-red-400 font-semibold mb-2">🚫 Not Worth It</h3>
-          <ul class="space-y-1 text-gray-300">
-            <li>Shoulder/nape alterations</li>
-            <li>Major chest reshaping</li>
-            <li>Lapel or collar changes</li>
-          </ul>
-        </div>
-      </div>
-    </section>
+    </footer>
 
-    <section class="card-dark p-6 mb-12 rounded">
-      <h2 class="text-2xl text-accent font-bold mb-4">Real Tips for Real People</h2>
-      <div class="tip-box text-sm text-white space-y-2">
-        <p>🪡 Pin before you cut. Always. Then try it on.</p>
-        <p>📏 For growing kids, leave 1.5–2 inches of hem inside pants and sleeves. It buys you months.</p>
-        <p>✂️ When in doubt, remove less. It’s easy to take in more. Adding back fabric is a pain.</p>
-        <p>💡 Sewing machines don't need to be fancy. Even a $100 mechanical Singer will do the job if the needle’s sharp and the tension's right.</p>
-      </div>
-    </section>
+    <script>
+        // Add smooth scrolling for any internal links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
 
-    <section class="card-dark p-6 mb-12 rounded">
-      <h2 class="text-2xl text-accent font-bold mb-4">Quick Troubleshooting</h2>
-      <div class="warning-box text-sm text-gray-100 space-y-2">
-        <p><strong>Problem:</strong> Pants too baggy in the seat<br><strong>Fix:</strong> Take in center back seam 1/4" at a time.</p>
-        <p><strong>Problem:</strong> Jacket pulls at chest<br><strong>Fix:</strong> Try letting out side seams or check if the buttons are too high.</p>
-        <p><strong>Problem:</strong> Sleeves now too short<br><strong>Fix:</strong> Add a faux cuff using the original hem fabric or contrasting cotton.</p>
-      </div>
-    </section>
-
-    <section class="text-center">
-      <p class="text-gray-400 text-sm italic">This guide assumes you're here to get the job done yourself. No fluff, no referrals, no lectures—just usable advice.</p>
-    </section>
-  </main>
-
-  <footer class="gradient-bg text-center p-6 text-gray-400 text-sm">
-    Made for real parents who’d rather fix it than pay for it.
-  </footer>
+        // Add hover effects for cards
+        document.querySelectorAll('.card-dark').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.transition = 'transform 0.3s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
 </body>
 </html>
