@@ -23,6 +23,7 @@ import {
   extrudeMultiPolygon,
   addCone,
 } from '../core/mesh.js';
+import { addRoof } from '../core/roof.js';
 import { buildShapeRing, inscribedRadiusOf } from '../core/shapes.js';
 import { makeSampler } from '../data/elevation.js';
 import { seaFromCoastline } from './coastline.js';
@@ -329,7 +330,10 @@ export function buildModel(features, s, ctx = {}) {
       for (const poly of mp) {
         const box = bboxOfRing(poly[0]);
         if (!inPlate(box)) continue;
-        buildingShapes.push({ poly, box, heightM, tags: f.tags });
+        const areaM2 =
+          Math.abs(G.ringArea(poly[0])) / (mmPerMetre * mmPerMetre);
+        const roof = T.roofSpec(f.tags, { areaM2, heightM });
+        buildingShapes.push({ poly, box, heightM, roof, tags: f.tags });
       }
     }
   }
@@ -602,7 +606,7 @@ export function buildModel(features, s, ctx = {}) {
         minArea
       );
       if (!poly.length) continue;
-      buildingsPlaced.push({ mp: poly, heightM: b.heightM });
+      buildingsPlaced.push({ mp: poly, heightM: b.heightM, roof: b.roof });
     }
 
     const allFootprints = [];
@@ -689,17 +693,27 @@ export function buildModel(features, s, ctx = {}) {
     extrudeMultiPolygon(meshFor('route'), drape(routeRegion), 0, linearTop(s.heights.route));
   }
 
-  // Buildings
+  // Buildings — and their roofs, which are separate solids sitting
+  // face-to-face on the wall prisms so they can carry their own colour.
+  // The roof takes the top of the tagged height rather than adding to it,
+  // so the skyline is exactly as tall either way.
   report(0.82, 'Extruding buildings…');
   if (buildingsPlaced.length) {
     const mesh = meshFor('buildings');
     const scale = mmPerMetre * s.heights.buildingScale;
+    const roofsOn = s.layers.roofs !== false;
+    const roofOpts = { metreScale: scale, minRoofMm: 0.2, minHalfWidthMm: 0.35 };
     for (const b of buildingsPlaced) {
       const raw = b.heightM * scale;
       const h = Math.min(Math.max(raw, s.heights.buildingMin), s.heights.buildingMax);
       for (const poly of b.mp) {
         const [cx, cy] = centroidOf(poly[0]);
-        extrudePolygon(mesh, poly, 0, baseTop(cx, cy) + h);
+        const z0 = baseTop(cx, cy);
+        const wallTop =
+          roofsOn && b.roof
+            ? addRoof(meshFor('roofs'), poly, z0, h, b.roof, roofOpts)
+            : null;
+        extrudePolygon(mesh, poly, 0, wallTop ?? z0 + h);
       }
     }
   }

@@ -54,6 +54,19 @@ const CASES = [
       s.nameplate.title = 'AMSTERDAM';
       s.nameplate.subtitle = '52.3702° N  4.8952° E';
     },
+    // The centrum is wall-to-wall building=house and tagged roof shapes, so
+    // a build that silently stops producing roofs fails here.
+    expectRoofs: true,
+  },
+  {
+    name: 'Gladstone, Missouri — machine-traced tract housing',
+    // The case the roofs feature exists for: a US suburb where nearly every
+    // building is an untyped `building=yes` rectangle with no height. If the
+    // size-and-height heuristic stops recognising these as houses, this
+    // scenario goes flat again.
+    lat: 39.2072, lon: -94.5586, areaMetres: 1400,
+    tweak: (s) => { s.shape.type = 'circle'; },
+    expectRoofs: true,
   },
   {
     name: 'Miami Beach — natural=coastline sea fill',
@@ -113,22 +126,32 @@ async function cached(name, fetcher) {
   return data;
 }
 
+// The same rotation the app uses. A busy public instance answers 429, 503 or
+// 504 depending on which limiter caught the request; all three mean "try the
+// next mirror", not "give up".
+const MIRRORS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+];
+
 async function fetchFeatures(key, bbox, layers) {
   const json = await cached(`osm-${key}`, async () => {
     const query = overpass.buildQuery(bbox, layers, 120);
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const res = await fetch('https://overpass-api.de/api/interpreter', {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const res = await fetch(MIRRORS[attempt % MIRRORS.length], {
         method: 'POST',
         headers: { 'User-Agent': UA },
         body: new URLSearchParams({ data: query }),
       });
       if (res.ok) return res.json();
-      if (res.status !== 429 && res.status !== 504) {
+      if (![429, 503, 504].includes(res.status)) {
         throw new Error(`Overpass HTTP ${res.status}`);
       }
-      await new Promise((r) => setTimeout(r, 8000 * (attempt + 1)));
+      await new Promise((r) => setTimeout(r, 4000 * (attempt + 1)));
     }
-    throw new Error('Overpass stayed busy after 4 attempts');
+    throw new Error('every Overpass mirror stayed busy');
   });
   return {
     features: overpass.parseElements(json.elements || []),
@@ -361,6 +384,16 @@ async function runCase(spec) {
   if (spec.expectGround) {
     check('land survives alongside the sea', (shares.ground || 0) > 0,
       'the coastline fill consumed every land region');
+  }
+
+  if (spec.expectRoofs) {
+    const roofs = result.parts.find((p) => p.id === 'roofs');
+    const walls = result.parts.find((p) => p.id === 'buildings');
+    check('houses grew roofs', Boolean(roofs) && roofs.triangleCount > 500,
+      roofs ? `only ${roofs.triangleCount} roof triangles` : 'no roofs part at all');
+    check('roofs carve the walls, never add to them',
+      Boolean(roofs && walls) && roofs.volumeMm3 < walls.volumeMm3,
+      'roof volume rivals the walls — heights are being stacked, not carved');
   }
 
   /* --- the partition must tile the plate exactly --- */

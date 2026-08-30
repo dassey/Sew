@@ -200,16 +200,35 @@ export function extrudePolygon(mesh, poly, bottom, top, opts = {}) {
   // else leaves the solid open. Each boundary half-edge runs with the cap
   // interior on its left, so the same winding rule gives outward normals for
   // shell and hole walls alike.
+  //
+  // A wall of exactly zero height is no wall at all: where a sloped top cap
+  // comes down to meet the bottom cap — a roof at its eave — the two cap
+  // boundary edges pair with each other directly, and emitting a quad there
+  // would only add zero-area facets for the exporter to trip over. Zero at
+  // one end only means the quad degenerates to a triangle. The comparisons
+  // are exact on purpose: sloped tops are snapped to the micron grid, so a
+  // zero-height edge is exactly zero, never merely small.
   for (const [ia, ib] of tri.boundary) {
     const x1 = flat[ia * 2];
     const y1 = flat[ia * 2 + 1];
     const x2 = flat[ib * 2];
     const y2 = flat[ib * 2 + 1];
-    const b1 = mesh.addVertex(x1, y1, zBottom(x1, y1));
-    const b2 = mesh.addVertex(x2, y2, zBottom(x2, y2));
-    const t2 = mesh.addVertex(x2, y2, zTop(x2, y2));
-    const t1 = mesh.addVertex(x1, y1, zTop(x1, y1));
-    mesh.addQuad(b1, b2, t2, t1);
+    const zb1 = zBottom(x1, y1);
+    const zb2 = zBottom(x2, y2);
+    const zt1 = zTop(x1, y1);
+    const zt2 = zTop(x2, y2);
+    if (zt1 === zb1 && zt2 === zb2) continue;
+    const b1 = mesh.addVertex(x1, y1, zb1);
+    const b2 = mesh.addVertex(x2, y2, zb2);
+    if (zt1 === zb1) {
+      mesh.addTriangle(b1, b2, mesh.addVertex(x2, y2, zt2));
+    } else if (zt2 === zb2) {
+      mesh.addTriangle(b1, b2, mesh.addVertex(x1, y1, zt1));
+    } else {
+      const t2 = mesh.addVertex(x2, y2, zt2);
+      const t1 = mesh.addVertex(x1, y1, zt1);
+      mesh.addQuad(b1, b2, t2, t1);
+    }
   }
   return true;
 }

@@ -94,6 +94,11 @@ region areas**, not from the triangle soup — the soup also counts the
 redundant coplanar triangles earcut emits inside self-touching rings, which
 are harmless but will hide the real number.
 
+One part lives outside the partition: **roofs**. They claim no ground — each
+is a closed solid stacked face-to-face on its building prism, exactly the way
+every part already sits on the base — and they are excluded from the region
+areas, so the tiling assertion never sees them. See §10.
+
 ---
 
 ## 3. Build order
@@ -245,6 +250,14 @@ rings**.
 That last point is the same trap as above and is worth stating twice, because
 it is invisible until someone runs a mesh checker.
 
+Both `bottom` and `top` accept either a number or an `(x, y) => z` function,
+which is what terrain draping and sloped roofs ride on. One rule makes sloped
+tops watertight: **a wall whose top and bottom are exactly equal is skipped**
+(the two cap boundary edges pair with each other directly), and a wall that is
+zero at one end only degenerates to a triangle. The equality is exact — so any
+z-function you pass must snap its output to the micron grid, or the eave walls
+come back as zero-area facets instead of disappearing.
+
 The test to write: for every part, every directed edge has exactly one twin.
 Open edges must be zero. Volume must be positive.
 
@@ -366,6 +379,57 @@ catch-all that makes the areas sum to 100%.
   plate is wide enough there — on a star, the naive position is in empty
   space.
 - **`stats.regionAreas`** — exact boolean areas, for the partition assertion.
+
+### Roofs (`js/core/roof.js`, ~200 lines)
+
+The single change that turns "a plate of boxes" into "a neighbourhood". Each
+roof is a **separate closed solid** in its own `roofs` part, sitting
+face-to-face on its building prism — outside the ground partition entirely, so
+`regionAreas` and the tiling assertion never see it. The prism is extruded to
+a lowered wall-top and the roof occupies the difference: heights are carved,
+never stacked, so the skyline is exactly as tall as the tags say.
+
+Which buildings get one (`roofSpec` in `tags.js`): an explicit `roof:shape`
+always wins, folded onto three buildable forms — ridge (`gabled`, hipped,
+gambrel, mansard…), point (`pyramidal`, dome, onion, tent), single slope
+(`skillion`, lean_to). Without tags, house-family building types default to
+gabled — and so does a **small, low, untyped `building=yes`** (25–400 m², up
+to 12 m), because machine-traced suburbs, the places people actually print,
+are wall-to-wall untyped rectangles. Area and height gates keep big-box stores
+and towers flat.
+
+The construction rests on one observation: split the footprint along its
+ridge line and each half's roof plane is a **linear function of x and y** —
+so any triangulation of the half is exactly planar, and the ordinary extruder
+with a per-vertex top does all the work, gable ends included (the boundary
+walls climb from eave to ridge by themselves).
+
+- The ridge is the long axis of the footprint's **minimum-area oriented
+  bounding box** (`orientedBounds` in geom.js — convex hull, then rotating
+  calipers). Axis-aligned bounds misjudge any rotated house;
+  `roof:orientation=across` swaps the axes.
+- The halves come from boolean intersection with two half-plane rectangles
+  sharing the ridge edge, so both sides compute bit-identical crossing
+  points. Each resulting piece is extruded as its own closed solid — an
+  L-shaped house yields three pieces, all watertight, and no piece needs any
+  other to close.
+- Every z is **snapped to the micron grid**, which is what arms the
+  extruder's zero-height-wall rule at the eaves and keeps the two halves'
+  ridge vertices identical. The coincident interior walls under the ridge are
+  shared faces between two closed solids — the same benign category as two
+  adjacent buildings.
+- Skillion is one solid (the plane is linear over the whole footprint,
+  direction from `roof:direction`, compass-parsed). Pyramidal is a bottom cap
+  plus a fan to an apex over the box centre, and downgrades to gabled below
+  0.8 convexity so the apex cannot hang over a concave footprint's void.
+- Refusals fall back to the plain flat prism: footprints with holes
+  (courtyards), eave-to-ridge runs under ~0.35 mm printed, rises under
+  ~0.2 mm, degenerate bounding boxes. `addRoof` returning null must leave
+  the mesh untouched.
+
+Default pitch when OSM tags no height: ~36° from the eave-to-ridge run,
+capped in real metres (6 m gabled, 8 m pyramidal), and never more than 60% of
+the building's height.
 
 ---
 
@@ -497,6 +561,9 @@ into a share link.
 **Parts** — ordered list of `{ id, label, color, hint }`. The order *is* the
 priority order and the paint order. One part maps to one preview mesh, one
 3MF object, one OBJ material, one file in the STL bundle. Keep that one-to-one.
+The full list: route, buildings, roofs, trees, rail, main roads, streets,
+water, parks, ground, frame, nameplate — roofs being the one that competes for
+no ground (§2).
 
 **Settings** — nested groups: `location`, `shape`, `size`, `layers`,
 `heights` (mm, measured from the top of the base slab), `print`, `terrain`,
@@ -514,14 +581,14 @@ Overpass parser and the import merger.
 
 ## 16. Tests
 
-Four suites, ~467 checks. The first two need nothing but Node and should run
+Four suites, ~553 checks. The first two need nothing but Node and should run
 constantly.
 
 | Suite | Checks | Needs |
 |---|---|---|
-| `geometry.mjs` | 141 | Nothing. Pure maths. |
+| `geometry.mjs` | 189 | Nothing. Pure maths. |
 | `import.mjs` | 56 | Nothing. |
-| `smoke.mjs` | 199 | Overpass on first run; caches to `test/.cache` |
+| `smoke.mjs` | 237 | Overpass on first run; caches to `test/.cache` |
 | `browser.mjs` | 71 | Playwright; network stubbed |
 
 What they must assert, in rough order of value:
