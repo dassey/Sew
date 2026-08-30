@@ -101,6 +101,113 @@ export function buildingHeight(tags, fallback = 9) {
 }
 
 /**
+ * OSM's zoo of roof shapes, folded onto the three the mesh builder knows how
+ * to make. Hips, gambrels and mansards all read as "a ridge" at print scale;
+ * domes and onions read as "a point". Anything unrecognised falls through to
+ * the per-building-type default below.
+ */
+const ROOF_SHAPES = {
+  gabled: 'gabled',
+  hipped: 'gabled',
+  half_hipped: 'gabled',
+  'half-hipped': 'gabled',
+  gambrel: 'gabled',
+  mansard: 'gabled',
+  saltbox: 'gabled',
+  round: 'gabled',
+  pyramidal: 'pyramidal',
+  dome: 'pyramidal',
+  onion: 'pyramidal',
+  tent: 'pyramidal',
+  cone: 'pyramidal',
+  skillion: 'skillion',
+  lean_to: 'skillion',
+  'lean-to': 'skillion',
+  flat: 'flat',
+};
+
+/**
+ * Building types that get a gabled roof even when nothing is tagged. This is
+ * the set where flat-topped boxes read as wrong: OSM's residential coverage
+ * is overwhelmingly untagged, and it is exactly the part of the map users
+ * mean when they say "the houses are just squares". Deliberately absent:
+ * apartments and commercial (usually genuinely flat), garages and
+ * `building=roof` canopies.
+ */
+const GABLED_BY_DEFAULT = new Set([
+  'house',
+  'detached',
+  'semidetached_house',
+  'terrace',
+  'terraced_house',
+  'bungalow',
+  'farm',
+  'farmhouse',
+  'cottage',
+  'cabin',
+  'villa',
+  'hut',
+  'shed',
+  'static_caravan',
+  'church',
+  'chapel',
+]);
+
+const COMPASS = {
+  N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
+  S: 180, SSW: 202.5, SW: 225, WSW: 247.5, W: 270, WNW: 292.5, NW: 315, NNW: 337.5,
+};
+
+function parseDirection(value) {
+  if (value == null) return null;
+  const s = String(value).trim();
+  const n = parseFloat(s);
+  if (Number.isFinite(n)) return ((n % 360) + 360) % 360;
+  return COMPASS[s.toUpperCase()] ?? null;
+}
+
+/**
+ * How this building's roof should print, or null for flat.
+ *
+ * @param {object} tags
+ * @param {object} [ctx]  {areaM2, heightM} of the specific footprint —
+ *                        untyped buildings are judged by their size
+ * @returns {{shape, heightM, orientation, directionDeg}|null}
+ *          heightM null means "derive from the footprint at a fixed pitch".
+ */
+export function roofSpec(tags, ctx = {}) {
+  let shape = ROOF_SHAPES[tags['roof:shape']] ?? null;
+  if (!shape) {
+    const kind = tags.building || tags['building:part'];
+    if (kind && GABLED_BY_DEFAULT.has(kind)) {
+      shape = 'gabled';
+    } else if (kind === 'yes' || kind === 'residential') {
+      // The neighbourhoods people actually print are mostly machine-traced:
+      // every house an untyped `building=yes` rectangle. A small, low,
+      // untyped footprint is a house in all but name, so it gets the house
+      // treatment — the area gate keeps big-box stores flat, the height
+      // gate keeps anything remotely tower-shaped flat.
+      const area = ctx.areaM2 ?? 0;
+      const tall = (ctx.heightM ?? 99) > 12;
+      if (area > 25 && area <= 400 && !tall) shape = 'gabled';
+    }
+  }
+  if (!shape || shape === 'flat') return null;
+
+  const levels = parseFloat(tags['roof:levels']);
+  const heightM =
+    parseLength(tags['roof:height']) ??
+    (Number.isFinite(levels) && levels > 0 ? levels * 2.4 : null);
+
+  return {
+    shape,
+    heightM: heightM && heightM > 0 ? heightM : null,
+    orientation: tags['roof:orientation'] === 'across' ? 'across' : 'along',
+    directionDeg: parseDirection(tags['roof:direction']),
+  };
+}
+
+/**
  * Road widths in metres, keyed by `highway`. These are carriageway widths
  * including shoulders — a printed street reads better slightly wide than
  * slightly thin.

@@ -19,7 +19,8 @@ STL you can drop straight into your slicer.
 |---|---|
 | **Find anywhere** | City, address, postcode, landmark or raw coordinates. Street addresses are resolved by Nominatim, which indexes house numbers; everything else uses Photon, which is built for type-ahead. |
 | **Ten plate shapes** | Circle, square, rounded square, rectangle, hexagon, octagon, triangle, heart, star — or draw your own outline on the map. |
-| **Real layers, real colours** | Buildings, main roads, streets, rail, water, parks, trees, route, frame and nameplate, each a separately coloured solid. |
+| **Real layers, real colours** | Buildings, roofs, main roads, streets, rail, water, parks, trees, route, frame and nameplate, each a separately coloured solid. |
+| **Houses look like houses** | Pitched roofs, not flat boxes: gables, hips, spires and skillions from OSM's roof tags — and a gabled default for anything house-shaped, so machine-traced suburbs read as neighbourhoods. Roofs are their own colour; terracotta over white is the classic. |
 | **Highlighted routes** | Route A→B by car, foot or bike, or drop in a GPX file — your marathon, your commute, your road trip — as a raised ribbon across the plate. |
 | **Real terrain** | Optional elevation, so San Francisco arrives with its hills on. |
 | **Engraved nameplate** | Raised city name and coordinates on a bar below the map. |
@@ -44,6 +45,9 @@ Every square millimetre is awarded to exactly one part, in priority order:
 ```
 route → buildings → rail → main roads → streets → water → parks → ground
 ```
+
+(Roofs are the one part outside the contest: each sits face-to-face on its
+building, carved out of the building's own height, in its own colour.)
 
 Each region is then extruded as its own watertight prism. That single decision
 buys three things:

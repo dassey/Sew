@@ -34,19 +34,19 @@ const PALETTES = {
   blueprint: {
     ground: '#12395c', water: '#0d2942', green: '#1b4a6f',
     roads: '#cddff0', roadsMajor: '#ffffff', rail: '#8fb4d4',
-    buildings: '#e8f2fb', trees: '#2f6d8f', route: '#ffcc4d',
+    buildings: '#e8f2fb', roofs: '#b9d4ec', trees: '#2f6d8f', route: '#ffcc4d',
     frame: '#0a2036', label: '#ffffff',
   },
   night: {
     ground: '#1b1f27', water: '#16324a', green: '#243a2a',
     roads: '#e8c86a', roadsMajor: '#ffd980', rail: '#6b5f4a',
-    buildings: '#39414d', trees: '#2e4a34', route: '#ff6b5b',
+    buildings: '#39414d', roofs: '#59453c', trees: '#2e4a34', route: '#ff6b5b',
     frame: '#0d1015', label: '#ffd980',
   },
   mono: {
     ground: '#e6e6e6', water: '#9a9a9a', green: '#c4c4c4',
     roads: '#585858', roadsMajor: '#3a3a3a', rail: '#767676',
-    buildings: '#fafafa', trees: '#8d8d8d', route: '#1a1a1a',
+    buildings: '#fafafa', roofs: '#c2c2c2', trees: '#8d8d8d', route: '#1a1a1a',
     frame: '#2a2a2a', label: '#fafafa',
   },
 };
@@ -1197,6 +1197,7 @@ class App {
 function layerToggleKey(partId) {
   const map = {
     buildings: 'buildings',
+    roofs: 'roofs',
     roads: 'roads',
     roadsMajor: 'roads',
     rail: 'rail',

@@ -257,7 +257,7 @@ async function installStubs(page, osm) {
     ok('Leaflet map is live', await page.evaluate(() =>
       Boolean(window.skylineForge.picker.map.getCenter())));
     ok('all ten shapes are offered', (await page.locator('.shape-btn').count()) === 10);
-    ok('all eleven layers are listed', (await page.locator('.layer-row').count()) === 11);
+    ok('all twelve layers are listed', (await page.locator('.layer-row').count()) === 12);
     ok('all four export formats are offered', (await page.locator('.format-opt').count()) === 4);
 
     /* ---------- first model ---------- */

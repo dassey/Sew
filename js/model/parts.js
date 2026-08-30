@@ -14,6 +14,7 @@
 export const PARTS = [
   { id: 'route',      label: 'Route',        color: '#e0483e', hint: 'Highlighted path' },
   { id: 'buildings',  label: 'Buildings',    color: '#f2ede3', hint: 'Extruded footprints' },
+  { id: 'roofs',      label: 'Roofs',        color: '#b0563c', hint: 'Pitched roofs on houses' },
   { id: 'trees',      label: 'Trees',        color: '#41763d', hint: 'Individual tree markers' },
   { id: 'rail',       label: 'Rail',         color: '#8a6d5a', hint: 'Train, tram and metro' },
   { id: 'roadsMajor', label: 'Main roads',   color: '#c8842e', hint: 'Motorway to secondary' },
@@ -59,6 +60,7 @@ export const DEFAULT_SETTINGS = {
 
   layers: {
     buildings: true,
+    roofs: true,
     roads: true,
     rail: true,
     water: true,

@@ -200,6 +200,97 @@ export function boundsOf(mp) {
   return { minX, minY, maxX, maxY };
 }
 
+/** Convex hull (monotone chain), counter-clockwise, duplicates dropped. */
+export function convexHull(points) {
+  const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const uniq = [];
+  for (const p of pts) {
+    const q = uniq[uniq.length - 1];
+    if (!q || q[0] !== p[0] || q[1] !== p[1]) uniq.push(p);
+  }
+  if (uniq.length < 3) return uniq;
+  const cross = (o, a, b) =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower = [];
+  for (const p of uniq) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+      lower.pop();
+    }
+    lower.push(p);
+  }
+  const upper = [];
+  for (let i = uniq.length - 1; i >= 0; i--) {
+    const p = uniq[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+      upper.pop();
+    }
+    upper.push(p);
+  }
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
+/**
+ * Minimum-area oriented bounding box, via rotating calipers over the hull.
+ *
+ * The roof builder reads the long axis as the ridge direction, which is the
+ * right guess for nearly every house — including footprints already clipped
+ * by the plate edge, which axis-aligned bounds would misjudge badly.
+ *
+ * @returns {{cx, cy, ux, uy, vx, vy, halfLength, halfWidth}|null}
+ *          `u` is the unit long axis, `v` the unit short axis,
+ *          `halfLength >= halfWidth`. Null for degenerate input.
+ */
+export function orientedBounds(ring) {
+  const hull = convexHull(ring);
+  if (hull.length < 3) return null;
+  let best = null;
+  for (let i = 0; i < hull.length; i++) {
+    const j = (i + 1) % hull.length;
+    const ex = hull[j][0] - hull[i][0];
+    const ey = hull[j][1] - hull[i][1];
+    const len = Math.hypot(ex, ey);
+    if (len < 1e-9) continue;
+    const ux = ex / len;
+    const uy = ey / len;
+    let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+    for (const [x, y] of hull) {
+      const du = x * ux + y * uy;
+      const dv = -x * uy + y * ux;
+      if (du < minU) minU = du;
+      if (du > maxU) maxU = du;
+      if (dv < minV) minV = dv;
+      if (dv > maxV) maxV = dv;
+    }
+    const area = (maxU - minU) * (maxV - minV);
+    if (!best || area < best.area) {
+      best = { area, ux, uy, minU, maxU, minV, maxV };
+    }
+  }
+  if (!best) return null;
+  const cu = (best.minU + best.maxU) / 2;
+  const cv = (best.minV + best.maxV) / 2;
+  let ux = best.ux;
+  let uy = best.uy;
+  let halfLength = (best.maxU - best.minU) / 2;
+  let halfWidth = (best.maxV - best.minV) / 2;
+  if (halfWidth > halfLength) {
+    [halfLength, halfWidth] = [halfWidth, halfLength];
+    [ux, uy] = [-uy, ux];
+  }
+  return {
+    cx: best.ux * cu - best.uy * cv,
+    cy: best.uy * cu + best.ux * cv,
+    ux,
+    uy,
+    vx: -uy,
+    vy: ux,
+    halfLength,
+    halfWidth,
+  };
+}
+
 export function pointInRing(pt, ring) {
   let inside = false;
   const [px, py] = pt;

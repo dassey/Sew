@@ -32,9 +32,9 @@ It must be served over HTTP — ES modules and the model worker will not load
 from `file://`.
 
 ```sh
-node test/geometry.mjs    # 141 checks. Pure maths, no network. Run this constantly.
+node test/geometry.mjs    # 189 checks. Pure maths, no network. Run this constantly.
 node test/import.mjs      #  56 checks. Shapefile/GeoJSON/KML readers, reprojection.
-node test/smoke.mjs       # 199 checks. Live Overpass, cached under test/.cache.
+node test/smoke.mjs       # 237 checks. Live Overpass, cached under test/.cache.
 node test/browser.mjs     #  71 checks. Real page in Chromium, network stubbed.
 node test/manifold.mjs f  # Diagnostic, not a suite. Reads an exported 3MF.
 npm run lint
@@ -89,12 +89,33 @@ Holes are found by orientation, not position.
 ±180/±90 are projected. Guessing puts a neighbourhood in the Arctic — which the
 test fixture did, at 76°N, before the check existed.
 
+**Roof z-values are snapped to the micron grid, and a zero-height wall is
+exactly zero.** The extruder skips wall quads whose top and bottom are
+*identical* — that is how a roof's eave meets the wall top without emitting
+zero-area facets. The comparison is `===` on purpose; it works because
+`roof.js` snaps every z it produces. Feed the extruder an unsnapped sloped top
+and the eave walls come back as degenerate facets in the 3MF.
+
+**Each gabled half is its own closed solid.** The two halves share bit-identical
+ridge vertices because both sides snap the same coordinates, but neither needs
+the other to be watertight. Do not "optimise" them into one open-seamed solid.
+
+**Roofs carve the building's height, they never add to it.** `addRoof` returns
+the lowered wall-top and the prism stops there; the ridge lands exactly at the
+height the flat roof would have had. Stack them instead and every tagged
+building height in the model is wrong.
+
 ## The central design idea
 
 The plate is carved into a **disjoint partition**: every square millimetre is
 awarded to exactly one part, in priority order (route → buildings → rail → main
 roads → streets → water → parks → ground), and each region is extruded as its
 own watertight prism.
+
+Roofs are the one part outside the partition: they claim no ground, they sit
+face-to-face on top of the building prisms — the same stacking every part
+already does against the base. They are deliberately absent from
+`stats.regionAreas`, so the tiling assertion below is unaffected.
 
 Do not "simplify" this into stacked layers. It is what makes colour boundaries
 crisp, lets one geometry serve both single- and multi-material prints, and lets
