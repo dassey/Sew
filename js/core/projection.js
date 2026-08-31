@@ -1,13 +1,3 @@
-/**
- * Local tangent-plane projection.
- *
- * City-scale models never span more than a few kilometres, so a local
- * equirectangular projection anchored at the selection centre is both simpler
- * and *more* faithful than Web Mercator: it keeps distances in true metres
- * instead of inflating them by sec(latitude). The per-degree constants are the
- * standard WGS84 series expansions, accurate to well under a metre.
- */
-
 export function createProjection(centerLat, centerLon) {
   const phi = (centerLat * Math.PI) / 180;
 
@@ -28,17 +18,14 @@ export function createProjection(centerLat, centerLon) {
     mPerDegLat,
     mPerDegLon,
 
-    /** [lat, lon] -> [east, north] in metres from the centre. */
     forward(lat, lon) {
       return [(lon - centerLon) * mPerDegLon, (lat - centerLat) * mPerDegLat];
     },
 
-    /** [east, north] metres -> [lat, lon]. */
     inverse(x, y) {
       return [centerLat + y / mPerDegLat, centerLon + x / mPerDegLon];
     },
 
-    /** Metres -> degrees, for turning a radius into a bounding box. */
     metresToDegLat(m) {
       return m / mPerDegLat;
     },
@@ -48,7 +35,6 @@ export function createProjection(centerLat, centerLon) {
   };
 }
 
-/** Great-circle distance in metres (haversine) — used for route stats. */
 export function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371008.8;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;

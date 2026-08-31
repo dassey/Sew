@@ -1,7 +1,3 @@
-/**
- * Export orchestration: format choice, file naming, and the browser download.
- */
-
 import { toBinaryStl, toStlBuffer } from './stl.js';
 import { to3mf } from './threemf.js';
 import { toObj } from './obj.js';
@@ -49,12 +45,6 @@ function banner(meta) {
   return `Skyline Forge | ${meta.title || 'model'} | ${meta.coords || ''}`.slice(0, 79);
 }
 
-/**
- * @param {string} format one of FORMATS[].id
- * @param {Array} parts
- * @param {object} meta {title, coords, description, scale}
- * @returns {{blob: Blob, filename: string}}
- */
 export function buildExport(format, parts, meta = {}) {
   const usable = parts.filter((p) => p.indices.length >= 3);
   if (!usable.length) throw new Error('There is no geometry to export yet.');
@@ -70,7 +60,6 @@ export function buildExport(format, parts, meta = {}) {
 
     case 'stl-parts': {
       const entries = usable.map((part, i) => ({
-        // The numeric prefix keeps slicer import order matching print order.
         name: `${String(i + 1).padStart(2, '0')}-${slugify(part.id, part.id)}.stl`,
         data: new Uint8Array(toStlBuffer([part], `${banner(meta)} | ${part.label}`)),
       }));
@@ -147,7 +136,5 @@ export function downloadBlob(blob, filename) {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  // Revoke on the next frame; revoking immediately can cancel the download in
-  // Safari before it starts.
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }

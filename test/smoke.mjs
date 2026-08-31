@@ -1,18 +1,3 @@
-/**
- * End-to-end smoke test against live OpenStreetMap data.
- *
- * Runs the real pipeline — Overpass -> parseElements -> buildModel -> exporters
- * — over a handful of deliberately awkward places, and asserts the things that
- * actually determine whether a print succeeds:
- *
- *   - every part is a closed solid with positive volume (winding is correct);
- *   - no part reaches below the bed or beyond the plate;
- *   - parts do not overlap, because the whole colour scheme depends on that;
- *   - the exporters emit structurally valid files.
- *
- *   node test/smoke.mjs [--quick]
- */
-
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -54,17 +39,11 @@ const CASES = [
       s.nameplate.title = 'AMSTERDAM';
       s.nameplate.subtitle = '52.3702° N  4.8952° E';
     },
-    // The centrum is wall-to-wall building=house and tagged roof shapes, so
-    // a build that silently stops producing roofs fails here.
     expectRoofs: true,
   },
   {
-    name: 'Gladstone, Missouri — machine-traced tract housing',
-    // The case the roofs feature exists for: a US suburb where nearly every
-    // building is an untyped `building=yes` rectangle with no height. If the
-    // size-and-height heuristic stops recognising these as houses, this
-    // scenario goes flat again.
-    lat: 39.2072, lon: -94.5586, areaMetres: 1400,
+    name: 'Levittown, New York — machine-traced tract housing',
+    lat: 40.7259, lon: -73.5143, areaMetres: 1400,
     tweak: (s) => { s.shape.type = 'circle'; },
     expectRoofs: true,
   },
@@ -104,19 +83,9 @@ function pass(label, detail = '') {
   console.log(`    ✓ ${label}${detail ? ` — ${detail}` : ''}`);
 }
 
-/* ---- helpers that mirror what the app does ---- */
-
-// Overpass rejects Node's default agent with a 406. Browsers send a real one,
-// so this header exists purely to let the test reach the same endpoint the app
-// does.
 const UA = 'SkylineForge-test/1.0 (https://github.com/dassey/skyline-forge)';
 const CACHE = join(HERE, '.cache');
 
-/**
- * Responses are cached on disk. The public Overpass instances rate-limit
- * hard, and re-running this suite while iterating on the geometry should not
- * cost them a fresh query every time.
- */
 async function cached(name, fetcher) {
   mkdirSync(CACHE, { recursive: true });
   const path = join(CACHE, `${name}.json`);
@@ -126,9 +95,6 @@ async function cached(name, fetcher) {
   return data;
 }
 
-// The same rotation the app uses. A busy public instance answers 429, 503 or
-// 504 depending on which limiter caught the request; all three mean "try the
-// next mirror", not "give up".
 const MIRRORS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
@@ -189,11 +155,6 @@ async function sampleTerrain(bbox, n) {
   return { n, bbox, values: Array.from(values), min, max };
 }
 
-/**
- * Watertightness test: in a closed manifold surface every edge is shared by
- * exactly two triangles, traversed once in each direction. A single unpaired
- * edge means a hole the slicer will have to guess at.
- */
 function openEdgeCount(positions, indices) {
   const edges = new Map();
   const key = (a, b) => `${a},${b}`;
@@ -202,7 +163,7 @@ function openEdgeCount(positions, indices) {
     for (let e = 0; e < 3; e++) {
       const a = weld(positions, tri[e]);
       const b = weld(positions, tri[(e + 1) % 3]);
-      if (a === b) continue; // degenerate
+      if (a === b) continue;
       const forward = key(a, b);
       const backward = key(b, a);
       if (edges.get(backward) > 0) {
@@ -217,7 +178,6 @@ function openEdgeCount(positions, indices) {
   return open;
 }
 
-/** Snap to 1 micron so that separately-emitted coincident vertices unify. */
 function weld(positions, index) {
   const i = index * 3;
   return (
@@ -249,8 +209,6 @@ function boundsOf(positions) {
   }
   return { minX, minY, minZ, maxX, maxY, maxZ };
 }
-
-/* ---- the run ---- */
 
 async function runCase(spec) {
   console.log(`\n▸ ${spec.name}`);
@@ -302,7 +260,6 @@ async function runCase(spec) {
   check('produced geometry', result.parts.length > 0);
   if (!result.parts.length) return;
 
-  /* --- per-part solidity --- */
   let allSolid = true;
   for (const part of result.parts) {
     const vol = signedVolume(part.positions, part.indices);
@@ -329,7 +286,6 @@ async function runCase(spec) {
     );
   }
 
-  /* --- plate containment --- */
   const all = boundsOf(
     Float32Array.from(result.parts.flatMap((p) => Array.from(p.positions)))
   );
@@ -342,14 +298,6 @@ async function runCase(spec) {
     `x[${all.minX.toFixed(1)}, ${all.maxX.toFixed(1)}] y[${all.minY.toFixed(1)}, ${all.maxY.toFixed(1)}] vs ±${limit}`
   );
 
-  /* --- the whole model must come off the bed as one piece --- */
-  //
-  // Vertex-sharing under-reports connectivity: the partition tiles the plate
-  // with zero gaps, so a region whose boundary happens to be made entirely of
-  // boolean intersection points shares no vertex with its neighbours while
-  // still meeting them face to face. Those are fused in the print. What is
-  // *not* fine is a structural part drifting off on its own, or a large share
-  // of the model separating — so the assertions target exactly that.
   const islands = connectedComponents(result.parts);
   check(
     'no significant part of the model is left loose',
@@ -365,7 +313,6 @@ async function runCase(spec) {
     `${stranded.join(', ')} would print as separate object${stranded.length === 1 ? '' : 's'}`
   );
 
-  /* --- no layer may swallow the plate --- */
   const shares = {};
   for (const p of result.parts) shares[p.id] = footprintArea(p);
   const surfaceTotal =
@@ -396,16 +343,6 @@ async function runCase(spec) {
       'roof volume rivals the walls — heights are being stacked, not carved');
   }
 
-  /* --- the partition must tile the plate exactly --- */
-  //
-  // This is the whole design: every square millimetre of the plate belongs to
-  // exactly one part. Under 100% means gaps the slicer has to guess at; over
-  // 100% means parts fighting for the same ground, which is what produces
-  // muddy colour boundaries and z-fighting in the preview.
-  //
-  // Buildings are counted from the area the builder actually claimed, not from
-  // the sum of individual footprints, because OSM routinely stacks overlapping
-  // outlines on the same structure.
   const claimed = Object.values(result.stats.regionAreas).reduce((a, b) => a + b, 0);
   const covered = claimed / result.stats.plateAreaMm2;
   check(
@@ -414,15 +351,10 @@ async function runCase(spec) {
     `regions cover ${(covered * 100).toFixed(2)}% of the plate`
   );
 
-  // And the triangulation must not lose any of it. It may emit a little extra
-  // — earcut can double up coplanar triangles inside a self-touching ring,
-  // which is redundant but prints identically — so only a shortfall is a bug.
   for (const part of result.parts) {
     if (part.id === 'trees' || part.id === 'buildings') continue;
     const declared = result.stats.regionAreas[part.id];
     if (!declared) continue;
-    // Tolerate rounding dust — a sub-micron ring can vanish when the geometry
-    // is snapped — but not a layer going missing.
     const floor = Math.min(declared * 0.99, declared - 2);
     check(
       `${part.id}: all of its region reaches the mesh`,
@@ -431,7 +363,6 @@ async function runCase(spec) {
     );
   }
 
-  /* --- exporters --- */
   mkdirSync(OUT, { recursive: true });
   const stem = key;
 
@@ -452,10 +383,6 @@ async function runCase(spec) {
   check('3MF assembles parts into one object', mfText.includes('<components>'));
   writeFileSync(join(OUT, `${stem}.3mf`), mfBytes);
 
-  // Re-read the file the way a slicer does: weld by the coordinates actually
-  // written to it, then look for leaks. Geometry that is watertight in memory
-  // can still spring holes once a format rounds it, and 3MF writes millimetres
-  // to three decimals.
   const written = analyseWrittenMesh(mfText);
   check('exported 3MF has no holes', written.holes === 0,
     `${written.holes} edges with a single triangle`);
@@ -477,14 +404,6 @@ async function runCase(spec) {
   writeFileSync(join(OUT, `${stem}.svg`), planView(result, s, spec.name));
 }
 
-/**
- * Top-down plan view as an SVG.
- *
- * Numeric assertions catch broken topology; they do not catch a model that is
- * watertight, correctly wound and *looks nothing like the city*. Rendering the
- * upward-facing triangles of each part, in that part's colour, makes that kind
- * of failure obvious at a glance.
- */
 function planView(result, settings, title) {
   const half = settings.size.printMm / 2 + settings.nameplate.barMm + 4;
   const layers = [];
@@ -497,7 +416,7 @@ function planView(result, settings, title) {
       const a = idx[i] * 3, b = idx[i + 1] * 3, c = idx[i + 2] * 3;
       const cross =
         (p[b] - p[a]) * (p[c + 1] - p[a + 1]) - (p[b + 1] - p[a + 1]) * (p[c] - p[a]);
-      if (cross <= 0) continue; // keep only upward faces
+      if (cross <= 0) continue;
       paths.push(
         `M${p[a].toFixed(2)} ${(-p[a + 1]).toFixed(2)}` +
         `L${p[b].toFixed(2)} ${(-p[b + 1]).toFixed(2)}` +
@@ -518,14 +437,6 @@ function planView(result, settings, title) {
   );
 }
 
-/**
- * Union-find over welded vertices across every part.
- *
- * Each part is watertight on its own, but that says nothing about whether they
- * touch each other. A nameplate hung off the tip of a star, or an island cut
- * off by the plate edge, is geometry that leaves the printer as a second loose
- * object — which no amount of per-part validation would catch.
- */
 function connectedComponents(parts) {
   const id = new Map();
   const ownerOf = new Map();
@@ -555,8 +466,6 @@ function connectedComponents(parts) {
 
   for (const part of parts) {
     const p = part.positions;
-    // Weld at 10 microns: parts that abut share a face but their vertices are
-    // produced independently and can differ in the last float32 digit.
     const key = (i) =>
       `${Math.round(p[i * 3] * 100)}_${Math.round(p[i * 3 + 1] * 100)}_${Math.round(p[i * 3 + 2] * 100)}`;
     for (let i = 0; i < part.indices.length; i += 3) {
@@ -576,7 +485,6 @@ function connectedComponents(parts) {
   const counts = [...sizes.values()].sort((a, b) => b - a);
   const total = counts.reduce((s, n) => s + n, 0) || 1;
 
-  // Which parts appear in something other than the biggest component?
   let biggestRoot = null;
   let biggestSize = -1;
   for (const [root, n] of sizes) {
@@ -590,13 +498,6 @@ function connectedComponents(parts) {
   return { count: counts.length, largestShare: counts[0] / total, strandedParts };
 }
 
-/**
- * Per-object leak check on the written 3MF XML.
- *
- * Only holes and degenerate facets count as failures. Edges shared by four
- * triangles are two parts meeting face to face, which is what a multi-material
- * model is supposed to look like and is not a defect.
- */
 function analyseWrittenMesh(xml) {
   let holes = 0;
   let degenerate = 0;
@@ -637,10 +538,7 @@ function analyseWrittenMesh(xml) {
   return { holes, degenerate };
 }
 
-/** Total XY footprint of a part's top-most horizontal faces. */
 function footprintArea(part) {
-  // Sum the |XY| area of upward-facing triangles: for a prism that is exactly
-  // its footprint, counted once.
   let area = 0;
   const p = part.positions;
   const idx = part.indices;
@@ -648,7 +546,7 @@ function footprintArea(part) {
     const a = idx[i] * 3, b = idx[i + 1] * 3, c = idx[i + 2] * 3;
     const cross =
       (p[b] - p[a]) * (p[c + 1] - p[a + 1]) - (p[b + 1] - p[a + 1]) * (p[c] - p[a]);
-    if (cross > 0) area += cross / 2; // counter-clockwise in XY => upward face
+    if (cross > 0) area += cross / 2;
   }
   return area;
 }
@@ -672,7 +570,6 @@ const zipRoundTrip = () => {
       console.log(`    ✗ threw: ${err.message}`);
       console.log(err.stack.split('\n').slice(1, 4).join('\n'));
     }
-    // The public Overpass instance asks for a pause between heavy queries.
     await new Promise((r) => setTimeout(r, 1200));
   }
 

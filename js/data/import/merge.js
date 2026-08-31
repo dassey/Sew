@@ -1,16 +1,6 @@
-/**
- * Fold imported datasets into the OSM feature set.
- *
- * Imported features are rewritten as OSM-shaped features with synthesised tags,
- * which means they go through the *same* clipping, layering, height and
- * extrusion code as everything downloaded from Overpass. Nothing in the model
- * builder knows or cares where a footprint came from.
- */
-
 const FEET_PER_METRE = 0.3048;
 const METRES_PER_LEVEL = 3.2;
 
-/** Where each target layer's features live, and what tags identify them. */
 const TARGETS = {
   buildings: {
     label: 'Buildings',
@@ -79,7 +69,6 @@ export function defaultMapping(dataset) {
   };
 }
 
-/** Attribute value -> metres. */
 export function heightInMetres(properties, mapping) {
   const raw = mapping.heightField ? properties?.[mapping.heightField] : null;
   const value = typeof raw === 'number' ? raw : Number(raw);
@@ -111,17 +100,10 @@ function inside(point, bbox, margin = 0) {
   );
 }
 
-/**
- * @param {object} osm      output of overpass.parseElements()
- * @param {Array} datasets  each with `.mapping`
- * @returns {{features: object, stats: object}}
- */
 export function applyImports(osm, datasets) {
   const active = (datasets || []).filter((d) => d?.mapping?.enabled !== false && d.features?.length);
   if (!active.length) return { features: osm, stats: { added: 0, replaced: 0 } };
 
-  // Shallow copy: the arrays are replaced wholesale, never mutated in place,
-  // so the cached Overpass result stays reusable.
   const out = {};
   for (const [key, value] of Object.entries(osm)) out[key] = Array.isArray(value) ? value.slice() : value;
 
@@ -135,8 +117,6 @@ export function applyImports(osm, datasets) {
     const bucket = target.bucket;
     if (!Array.isArray(out[bucket])) out[bucket] = [];
 
-    // "Replace" only clears the ground the import actually covers, so you can
-    // bring in one neighbourhood without blanking the rest of the plate.
     if (mapping.mode === 'replace') {
       const before = out[bucket].length;
       out[bucket] = out[bucket].filter((f) => {
@@ -169,8 +149,6 @@ export function applyImports(osm, datasets) {
         id: `import/${dataset.id}/${added}`,
         tags,
         rings: feature.rings,
-        // Linear water has to be buffered rather than filled; the model builder
-        // keys off this flag exactly as it does for OSM waterways.
         ...(bucket === 'water' && feature.kind === 'line' ? { linear: true } : {}),
       });
       added++;
@@ -180,7 +158,6 @@ export function applyImports(osm, datasets) {
   return { features: out, stats: { added, replaced } };
 }
 
-/** How much variety is in this dataset's heights, for the UI to report. */
 export function heightSummary(dataset, mapping) {
   if (!mapping.heightField) return null;
   const values = [];

@@ -1,14 +1,3 @@
-/**
- * KML / KMZ reader.
- *
- * What comes out of Google Earth and My Maps, so it is what a lot of people
- * already have lying around — a traced neighbourhood, a plot boundary, a
- * hand-drawn route.
- *
- * KML is always WGS84 lon/lat, which makes it the one format that never needs
- * reprojecting.
- */
-
 const NS = { kml: 'http://www.opengis.net/kml/2.2' };
 
 export function readKml(text) {
@@ -32,11 +21,6 @@ function text(el, tag) {
   return node ? node.textContent.trim() : '';
 }
 
-/**
- * Attributes live in three different places depending on who wrote the file:
- * ExtendedData/SimpleData (schema-backed), ExtendedData/Data (loose), or
- * nowhere at all, in which case only the name survives.
- */
 function readProperties(placemark) {
   const properties = {};
   const name = text(placemark, 'name');
@@ -63,7 +47,6 @@ function coerce(value) {
   return Number.isFinite(n) && /^-?[\d.]+$/.test(value) ? n : value;
 }
 
-/** "lon,lat[,alt] lon,lat[,alt] …" — whitespace or newline separated. */
 function parseCoordinates(node) {
   if (!node) return [];
   return node.textContent
@@ -97,7 +80,6 @@ function readGeometries(placemark) {
     if (points.length >= 2) lines.push(points);
   }
   for (const ring of placemark.getElementsByTagName('LinearRing')) {
-    // A LinearRing outside a Polygon is a closed path in its own right.
     if (ring.closest && ring.closest('Polygon')) continue;
     const points = parseCoordinates(ring.getElementsByTagName('coordinates')[0]);
     if (points.length >= 3) lines.push(points);

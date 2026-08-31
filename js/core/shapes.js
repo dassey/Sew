@@ -1,12 +1,3 @@
-/**
- * Base-plate outlines.
- *
- * Every generator returns a closed ring in model millimetres, centred on the
- * origin and sized so the shape's *inscribed* radius equals `radius`. Using the
- * inscribed radius (rather than circumscribed) means switching shapes keeps the
- * same amount of city visible instead of zooming as you cycle through them.
- */
-
 import { closeRing } from './geom.js';
 
 function rotate(ring, radians) {
@@ -16,12 +7,6 @@ function rotate(ring, radians) {
   return ring.map(([x, y]) => [x * c - y * s, x * s + y * c]);
 }
 
-/**
- * Distance from the origin to the nearest point on the outline.
- *
- * Doubles as an exact "definitely inside" test radius: anything within this
- * distance of the centre cannot cross the plate edge, whatever the shape.
- */
 export function inscribedRadiusOf(ring) {
   let minDist = Infinity;
   for (let i = 0; i < ring.length - 1; i++) {
@@ -37,13 +22,6 @@ export function inscribedRadiusOf(ring) {
   return isFinite(minDist) ? minDist : 0;
 }
 
-/**
- * Scale a ring so its longest bounding-box dimension is exactly `size`.
- *
- * "Printed size" has to mean the number you have to fit on the bed, so every
- * shape is normalised to the same measure — and normalised *after* rotation,
- * since a square turned 45° would otherwise overhang by 41%.
- */
 function scaleToExtent(ring, size) {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const [x, y] of ring) {
@@ -88,13 +66,11 @@ function roundedRect(halfW, halfH, r, segments = 8) {
 }
 
 function heartOutline(radius, steps = 160) {
-  // The classic 16sin³t heart, recentred on its own bounding box so it does
-  // not sit visually low on the plate.
   const raw = [];
   let minY = Infinity;
   let maxY = -Infinity;
   for (let i = 0; i < steps; i++) {
-    const t = Math.PI * 2 * (1 - i / steps); // reversed => counter-clockwise
+    const t = Math.PI * 2 * (1 - i / steps);
     const x = 16 * Math.sin(t) ** 3;
     const y =
       13 * Math.cos(t) -
@@ -134,16 +110,6 @@ export const SHAPES = [
   { id: 'custom', label: 'Custom polygon' },
 ];
 
-/**
- * @param {object} opts
- * @param {string} opts.shape    one of SHAPES[].id
- * @param {number} opts.radius   half the printed size; the finished ring spans
- *                               2 x radius along its longest axis
- * @param {number} opts.rotation degrees, clockwise on screen
- * @param {number} opts.aspect   width/height, used by 'rectangle'
- * @param {Array}  opts.custom   ring of [x, y] mm for shape === 'custom'
- * @returns {Array} closed ring, millimetres, centred on the origin
- */
 export function buildShapeRing({
   shape = 'circle',
   radius = 100,
@@ -197,15 +163,10 @@ export function buildShapeRing({
   return scaleToExtent(rotate(ring, rad), radius * 2);
 }
 
-/** Shape as a single-polygon multipolygon, ready for boolean ops. */
 export function buildShapeMultiPolygon(opts) {
   return [[buildShapeRing(opts)]];
 }
 
-/**
- * Worst-case radius of the outline, used to size the Overpass bounding box so
- * the download always covers the visible plate plus a small margin.
- */
 export function shapeOuterRadius(opts) {
   const ring = buildShapeRing(opts);
   let max = 0;

@@ -1,18 +1,3 @@
-/**
- * 3MF — the format worth caring about here.
- *
- * Unlike STL it carries units, colour and structure, which is what turns "a
- * grey lump" into a model your slicer already knows how to print in five
- * filaments.
- *
- * Each part becomes its own `<object>` bound to a `<base>` material, and a
- * single assembly object references them all through `<components>`. That last
- * detail matters: emitting one `<item>` per part would import as N separate
- * objects that the user then has to merge by hand, whereas one assembly
- * imports as a single object with N coloured parts — exactly the shape of a
- * multi-material job.
- */
-
 import { createZip } from './zip.js';
 
 const CONTENT_TYPES = `<?xml version="1.0" encoding="UTF-8"?>
@@ -32,7 +17,6 @@ function escapeXml(str) {
   );
 }
 
-/** '#rrggbb' -> '#RRGGBBAA', which is what the 3MF spec asks for. */
 function toDisplayColor(hex) {
   const clean = String(hex || '#cccccc').replace('#', '');
   const rgb = clean.length === 3
@@ -41,16 +25,10 @@ function toDisplayColor(hex) {
   return `#${rgb.toUpperCase()}FF`;
 }
 
-/**
- * @param {Array} parts   {id, label, color, positions, indices}
- * @param {object} [meta] {title, description, application}
- * @returns {Blob}
- */
 export function to3mf(parts, meta = {}) {
   const usable = parts.filter((p) => p.indices.length >= 3);
   if (!usable.length) throw new Error('Nothing to export.');
 
-  // Material index N lines up with object index N via the object's `pindex`.
   const materials = usable
     .map(
       (p) =>
@@ -60,7 +38,7 @@ export function to3mf(parts, meta = {}) {
 
   const objects = [];
   usable.forEach((part, index) => {
-    const objectId = index + 2; // id 1 is the base-materials group
+    const objectId = index + 2;
     const pos = part.positions;
     const idx = part.indices;
 
@@ -124,7 +102,6 @@ ${components}
   );
 }
 
-/** Three decimals is a micron — well past what any printer resolves. */
 function fmt(v) {
   return Number.isInteger(v) ? String(v) : v.toFixed(3).replace(/\.?0+$/, '');
 }

@@ -1,23 +1,8 @@
-/**
- * Bring your own data.
- *
- * OpenStreetMap's coverage is uneven — plenty of suburbs arrive as identical
- * machine-traced rectangles with no height on any of them — and the fix is
- * usually sitting on a county open-data portal. This turns whatever you can
- * download from there into the same feature shape the OSM pipeline already
- * speaks, so imported data goes through exactly the same clipping, layering
- * and extrusion as everything else.
- *
- * Supported: GeoJSON, KML, KMZ, and zipped Shapefiles. Everything is parsed in
- * the browser; no file is uploaded anywhere.
- */
-
 import { unzip, findByExtension } from './unzip.js';
 import { readShp, readDbf, combine, ringsToPolygons } from './shapefile.js';
 import { readGeoJson } from './geojson.js';
 import { readKml } from './kml.js';
 
-/** Field names worth guessing at, best first. */
 const HEIGHT_HINTS = [
   'height_m', 'heightm', 'bldg_height', 'building_height', 'roof_height',
   'height', 'hgt', 'ht', 'z', 'elevation_diff', 'max_height', 'mean_height',
@@ -29,10 +14,6 @@ const LEVEL_HINTS = [
 ];
 const NAME_HINTS = ['name', 'address', 'full_address', 'addr', 'label', 'title', 'street'];
 
-/**
- * @param {File} file
- * @returns {Promise<object>} a normalised dataset
- */
 export async function importFile(file) {
   const name = file.name || 'data';
   const lower = name.toLowerCase();
@@ -105,17 +86,6 @@ function fromShapefile(shpBytes, dbfBytes, encoding) {
   return { features, crs: null };
 }
 
-/* ------------------------------------------------------------------ *
- * Projection
- * ------------------------------------------------------------------ */
-
-/**
- * Are these coordinates plainly not longitude and latitude?
- *
- * Anything past ±180 / ±90 is projected, and government data almost always is
- * — State Plane feet, a UTM zone, a local grid. Guessing wrong puts the
- * neighbourhood in the Atlantic, so this is checked before anything is drawn.
- */
 function looksProjected(bounds) {
   return (
     Math.abs(bounds.minX) > 180 || Math.abs(bounds.maxX) > 180 ||
@@ -145,17 +115,12 @@ async function makeTransform(definition) {
   return (point) => proj4(from, proj4.WGS84, point);
 }
 
-/** Human-readable name out of a WKT string, for the UI. */
 function crsLabel(definition) {
   if (!definition) return null;
   const match = definition.match(/^\s*PROJCS\["([^"]+)"/i) || definition.match(/^\s*GEOGCS\["([^"]+)"/i);
   if (match) return match[1];
   return definition.length > 60 ? `${definition.slice(0, 57)}…` : definition;
 }
-
-/* ------------------------------------------------------------------ *
- * Normalisation
- * ------------------------------------------------------------------ */
 
 async function normalise(rawFeatures, meta) {
   const bounds = rawBounds(rawFeatures);
@@ -179,8 +144,6 @@ async function normalise(rawFeatures, meta) {
       throw new Error(`Could not read the projection (${err.message}). Re-export as WGS84 / EPSG:4326.`);
     }
   } else if (meta.crsDefinition && /GEOGCS|\+proj=longlat/i.test(meta.crsDefinition)) {
-    // Already lat/lon; the datum difference between NAD83 and WGS84 is under a
-    // metre, which is invisible at any printable scale.
     reprojected = false;
   }
 
@@ -243,11 +206,6 @@ async function normalise(rawFeatures, meta) {
   };
 }
 
-/**
- * Summarise the attribute table so the UI can offer sensible choices and the
- * user can tell at a glance whether the field they picked holds what they
- * think it does.
- */
 function describeFields(features) {
   const stats = new Map();
   const sampleSize = Math.min(features.length, 2000);
@@ -281,13 +239,6 @@ function describeFields(features) {
     .sort((a, b) => b.filled - a.filled);
 }
 
-/**
- * Best guess at which field carries building height, and in what unit.
- *
- * Ranges do the deciding rather than names alone: a column called "HEIGHT"
- * whose values top out at 4 is counting storeys, and one that reaches 300 is
- * measuring feet, not metres.
- */
 export function guessHeightMapping(fields) {
   const numeric = fields.filter((f) => f.type === 'number' && f.max !== null && f.max > 0);
   if (!numeric.length) return { field: null, unit: 'm' };
@@ -300,7 +251,6 @@ export function guessHeightMapping(fields) {
   const height = byName(HEIGHT_HINTS);
 
   if (height && (!levels || HEIGHT_HINTS.length)) {
-    // Values that peak in the low tens are metres; in the hundreds, feet.
     const unit = height.max > 90 ? 'ft' : 'm';
     return { field: height.name, unit };
   }

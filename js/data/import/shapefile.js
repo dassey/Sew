@@ -1,26 +1,9 @@
-/**
- * ESRI Shapefile reader (.shp geometry + .dbf attributes).
- *
- * Written out rather than pulled in: the format is small and stable, and
- * hand-rolling it avoids a dependency whose only job is thirty lines of
- * DataView reads. The pieces that actually matter and are easy to get wrong:
- *
- *   - The .shp header is mixed-endian. File length and record headers are
- *     big-endian; everything else is little-endian.
- *   - Ring winding is the opposite of GeoJSON. In a shapefile the outer ring
- *     is clockwise and holes are counter-clockwise, so holes have to be
- *     identified by orientation, not by position.
- *   - Z and M variants carry their extra arrays *after* the XY block, so the
- *     same reader handles them by simply stopping early.
- */
-
 const NULL_SHAPE = 0;
 const POINT = 1;
 const POLYLINE = 3;
 const POLYGON = 5;
 const MULTIPOINT = 8;
 
-/** Strip the Z (+10) and M (+20) offsets to get the base geometry type. */
 function baseType(type) {
   if (type >= 20) return type - 20;
   if (type >= 10) return type - 10;
@@ -35,10 +18,6 @@ function signedArea(points) {
   return a / 2;
 }
 
-/**
- * @param {ArrayBuffer|Uint8Array} shp
- * @returns {{shapes: Array, bbox: object, type: number}}
- */
 export function readShp(shp) {
   const bytes = shp instanceof Uint8Array ? shp : new Uint8Array(shp);
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -70,7 +49,7 @@ export function readShp(shp) {
     } else if (baseType(type) === POINT) {
       shapes.push({ kind: 'point', points: [[view.getFloat64(at, true), view.getFloat64(at + 8, true)]] });
     } else if (baseType(type) === MULTIPOINT) {
-      at += 32; // bbox
+      at += 32;
       const n = view.getInt32(at, true);
       at += 4;
       const points = [];
@@ -80,7 +59,7 @@ export function readShp(shp) {
       }
       shapes.push({ kind: 'point', points });
     } else if (baseType(type) === POLYLINE || baseType(type) === POLYGON) {
-      at += 32; // bbox
+      at += 32;
       const partCount = view.getInt32(at, true);
       const pointCount = view.getInt32(at + 4, true);
       at += 8;
@@ -109,7 +88,7 @@ export function readShp(shp) {
         parts,
       });
     } else {
-      shapes.push(null); // unknown type: keep the record slot so attributes line up
+      shapes.push(null);
     }
 
     offset += 8 + contentLength;
@@ -118,13 +97,6 @@ export function readShp(shp) {
   return { shapes, bbox, type: fileType };
 }
 
-/**
- * dBase III attribute table.
- *
- * @param {ArrayBuffer|Uint8Array} dbf
- * @param {string} [encoding] from the .cpg sidecar; latin1 is the safe default
- * @returns {{rows: Array<object>, fields: Array<{name, type}>}}
- */
 export function readDbf(dbf, encoding = 'windows-1252') {
   const bytes = dbf instanceof Uint8Array ? dbf : new Uint8Array(dbf);
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -183,7 +155,6 @@ function decodeField(text, type) {
     case 'L':
       return /^[yYtT]$/.test(text) ? true : /^[nNfF]$/.test(text) ? false : null;
     case 'D':
-      // YYYYMMDD
       return /^\d{8}$/.test(text)
         ? `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6)}`
         : text;
@@ -192,13 +163,6 @@ function decodeField(text, type) {
   }
 }
 
-/**
- * Combine geometry and attributes into features.
- *
- * @param {object} shp   result of readShp
- * @param {object} [dbf] result of readDbf
- * @returns {Array<{kind, parts, properties}>}
- */
 export function combine(shp, dbf) {
   const rows = dbf?.rows || [];
   const out = [];
@@ -206,24 +170,17 @@ export function combine(shp, dbf) {
   shp.shapes.forEach((shape, i) => {
     if (!shape) return;
     const properties = rows[i];
-    if (properties === null) return; // marked deleted in the .dbf
+    if (properties === null) return;
     out.push({ ...shape, properties: properties || {} });
   });
 
   return out;
 }
 
-/**
- * Split a shapefile polygon's parts into outer rings and their holes.
- *
- * Shapefile winding is the reverse of GeoJSON: clockwise means outer. Holes
- * are assigned to the most recently seen outer ring, which is what the format
- * guarantees for well-formed files.
- */
 export function ringsToPolygons(parts) {
   const polygons = [];
   for (const part of parts) {
-    const isOuter = signedArea(part) < 0; // clockwise in a y-up frame
+    const isOuter = signedArea(part) < 0;
     if (isOuter || !polygons.length) {
       polygons.push({ outer: part, holes: [] });
     } else {

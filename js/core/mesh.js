@@ -1,9 +1,3 @@
-/**
- * Triangle-soup accumulator with the extrusion primitives the model builder
- * needs. Geometry is indexed (compact in the viewer) and Z-up throughout so
- * that STL/3MF export is a straight copy with no axis juggling.
- */
-
 import { ringArea, triangulatePolygon, snapMultiPolygon } from './geom.js';
 
 const GROWTH = 1.6;
@@ -51,7 +45,6 @@ export class MeshBuilder {
     return this.indices.length === 0;
   }
 
-  /** Trim the position buffer and hand back plain typed arrays. */
   finish() {
     return {
       name: this.name,
@@ -64,11 +57,6 @@ export class MeshBuilder {
     };
   }
 
-  /**
-   * Signed volume via the divergence theorem. A watertight, correctly wound
-   * mesh yields a positive value; a negative or wildly small one is a reliable
-   * smoke test that winding or capping went wrong.
-   */
   volume() {
     let v = 0;
     const p = this.positions;
@@ -103,18 +91,6 @@ export class MeshBuilder {
   }
 }
 
-/**
- * Force outer rings counter-clockwise and holes clockwise.
- *
- * This matters for the *side walls*, not the caps. Earcut normalises ring
- * winding internally, so its triangles always come out counter-clockwise in XY
- * whatever it was handed — which is why the top cap is reliably +Z and the
- * bottom cap is reliably -Z after reversing. The walls have no such safety net:
- * they read the ring directly, and only produce outward normals when the solid
- * is consistently on the left of travel. Feed them a clockwise shell and every
- * wall faces inward while the caps still face out, which is both inside-out
- * *and* full of unpaired edges.
- */
 export function orientPolygon(poly) {
   const out = [];
   for (let i = 0; i < poly.length; i++) {
@@ -126,28 +102,9 @@ export function orientPolygon(poly) {
   return out;
 }
 
-/**
- * Extrude a polygon into a closed prism.
- *
- * @param {MeshBuilder} mesh
- * @param {Array} poly           outer ring + holes, mm
- * @param {number|Function} bottom  z, or (x, y) => z
- * @param {number|Function} top     z, or (x, y) => z
- * @param {object} [opts]
- * @param {boolean} [opts.capBottom=true]  emit the underside (skip when the
- *                                         prism sits on another solid)
- */
 export function extrudePolygon(mesh, poly, bottom, top, opts = {}) {
   const { capBottom = true } = opts;
 
-  // Snap to the micron grid before triangulating.
-  //
-  // Boolean output routinely places vertices a few nanometres apart. Left
-  // alone they survive in memory but collapse when a file format rounds them —
-  // 3MF writes millimetres to three decimals — turning a valid triangle into a
-  // zero-area facet that every mesh checker flags. Quantising here means the
-  // rounding on export is exact, and identical positions stay identical, so
-  // neighbouring parts still meet perfectly.
   const snapped = snapMultiPolygon(poly.length ? [poly] : [])[0];
   if (!snapped) return false;
 
@@ -161,7 +118,6 @@ export function extrudePolygon(mesh, poly, bottom, top, opts = {}) {
   const { flat, indices } = tri;
   const nVerts = flat.length / 2;
 
-  // Caps share the triangulation; walls are welded per ring below.
   const topBase = mesh.vertexCount;
   for (let i = 0; i < nVerts; i++) {
     const x = flat[i * 2];
@@ -185,7 +141,6 @@ export function extrudePolygon(mesh, poly, bottom, top, opts = {}) {
       mesh.addVertex(x, y, zBottom(x, y));
     }
     for (let i = 0; i < indices.length; i += 3) {
-      // Reversed winding so the underside faces -Z.
       mesh.addTriangle(
         bottomBase + indices[i + 2],
         bottomBase + indices[i + 1],
@@ -194,20 +149,6 @@ export function extrudePolygon(mesh, poly, bottom, top, opts = {}) {
     }
   }
 
-  // Walls follow the *triangulation's* boundary rather than the input rings.
-  // The two are normally identical, but when earcut disagrees it is the
-  // triangulation that the caps were actually built from — welding to anything
-  // else leaves the solid open. Each boundary half-edge runs with the cap
-  // interior on its left, so the same winding rule gives outward normals for
-  // shell and hole walls alike.
-  //
-  // A wall of exactly zero height is no wall at all: where a sloped top cap
-  // comes down to meet the bottom cap — a roof at its eave — the two cap
-  // boundary edges pair with each other directly, and emitting a quad there
-  // would only add zero-area facets for the exporter to trip over. Zero at
-  // one end only means the quad degenerates to a triangle. The comparisons
-  // are exact on purpose: sloped tops are snapped to the micron grid, so a
-  // zero-height edge is exactly zero, never merely small.
   for (const [ia, ib] of tri.boundary) {
     const x1 = flat[ia * 2];
     const y1 = flat[ia * 2 + 1];
@@ -233,7 +174,6 @@ export function extrudePolygon(mesh, poly, bottom, top, opts = {}) {
   return true;
 }
 
-/** Extrude every polygon of a multipolygon. Returns how many succeeded. */
 export function extrudeMultiPolygon(mesh, mp, bottom, top, opts) {
   let n = 0;
   for (const poly of mp) {
@@ -242,7 +182,6 @@ export function extrudeMultiPolygon(mesh, mp, bottom, top, opts) {
   return n;
 }
 
-/** Vertical cone/cylinder — tree canopies and map pins. */
 export function addCone(mesh, cx, cy, z0, z1, rBottom, rTop, segments = 8) {
   const ringIdx = [];
   const topIdx = [];
@@ -277,7 +216,6 @@ export function addCone(mesh, cx, cy, z0, z1, rBottom, rTop, segments = 8) {
   }
 }
 
-/** Merge several finished meshes into one buffer pair (for single-file STL). */
 export function mergeMeshes(meshes) {
   let vTotal = 0;
   let iTotal = 0;

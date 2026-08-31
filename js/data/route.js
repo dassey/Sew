@@ -1,14 +1,3 @@
-/**
- * Highlighted routes.
- *
- * Three ways to get a line onto the plate:
- *   1. Routed A -> B (-> C…) via Valhalla, which unlike the OSRM demo server
- *      actually carries walking and cycling profiles, not just driving.
- *   2. A GPX file — the natural input for "print my marathon" or "print the
- *      commute", since that is what watches and trackers already export.
- *   3. Points clicked directly on the map.
- */
-
 const VALHALLA = 'https://valhalla1.openstreetmap.de/route';
 const OSRM = 'https://router.project-osrm.org/route/v1';
 
@@ -18,7 +7,6 @@ export const PROFILES = [
   { id: 'bicycle', label: 'Bike', valhalla: 'bicycle', osrm: 'bike' },
 ];
 
-/** Google/Valhalla encoded polyline. Valhalla uses precision 6. */
 function decodePolyline(str, precision = 6) {
   const factor = 10 ** precision;
   const coords = [];
@@ -51,11 +39,6 @@ function decodePolyline(str, precision = 6) {
   return coords;
 }
 
-/**
- * @param {Array<{lat, lon}>} waypoints at least two
- * @param {string} profileId one of PROFILES[].id
- * @returns {Promise<{points: Array<[lat, lon]>, distance: number, duration: number, source: string}>}
- */
 export async function routeBetween(waypoints, profileId = 'auto', opts = {}) {
   if (!waypoints || waypoints.length < 2) {
     throw new Error('A route needs at least a start and an end.');
@@ -66,8 +49,6 @@ export async function routeBetween(waypoints, profileId = 'auto', opts = {}) {
     return await routeValhalla(waypoints, profile, opts);
   } catch (err) {
     if (err.name === 'AbortError') throw err;
-    // OSRM's demo server only carries the car profile, so it is a genuine
-    // fallback for driving and a rough approximation otherwise.
     try {
       return await routeOsrm(waypoints, profile, opts);
     } catch {
@@ -91,7 +72,6 @@ async function routeValhalla(waypoints, profile, opts) {
   const points = [];
   for (const leg of data.trip.legs) {
     const decoded = decodePolyline(leg.shape, 6);
-    // Legs share their junction point; drop the duplicate.
     points.push(...(points.length ? decoded.slice(1) : decoded));
   }
   return {
@@ -118,10 +98,6 @@ async function routeOsrm(waypoints, profile, opts) {
   };
 }
 
-/**
- * Parse a GPX file. Tracks win over routes win over loose waypoints, which is
- * the order of specificity most exporters write them in.
- */
 export function parseGpx(text) {
   const doc = new DOMParser().parseFromString(text, 'application/xml');
   if (doc.querySelector('parsererror')) throw new Error('That does not look like valid GPX.');

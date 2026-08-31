@@ -1,4 +1,3 @@
-/** Lint config for the buildless ES-module sources. */
 export default [
   {
     files: ['js/**/*.js', 'test/**/*.mjs'],

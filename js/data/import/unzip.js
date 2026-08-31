@@ -1,19 +1,7 @@
-/**
- * Minimal ZIP reader.
- *
- * Shapefiles never travel alone — a "shapefile" is three or four files that
- * must stay together — so in practice people upload a .zip. KMZ is a zip too.
- *
- * Decompression uses the platform's own DecompressionStream rather than a
- * bundled inflate, which keeps this to about a hundred lines and costs nothing
- * to download.
- */
-
 const SIG_EOCD = 0x06054b50;
 const SIG_CENTRAL = 0x02014b50;
 const SIG_LOCAL = 0x04034b50;
 
-/** Walk back from the end to find the end-of-central-directory record. */
 function findEocd(view) {
   const max = Math.min(view.byteLength, 0xffff + 22);
   for (let i = 22; i <= max; i++) {
@@ -31,10 +19,6 @@ async function inflateRaw(bytes) {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-/**
- * @param {ArrayBuffer} buffer
- * @returns {Promise<Map<string, Uint8Array>>} path -> contents
- */
 export async function unzip(buffer) {
   const view = new DataView(buffer);
   const bytes = new Uint8Array(buffer);
@@ -59,12 +43,10 @@ export async function unzip(buffer) {
     const name = decoder.decode(bytes.subarray(offset + 46, offset + 46 + nameLength));
     offset += 46 + nameLength + extraLength + commentLength;
 
-    if (name.endsWith('/')) continue;                 // directory entry
-    if (name.split('/').pop().startsWith('.')) continue; // __MACOSX and friends
+    if (name.endsWith('/')) continue;
+    if (name.split('/').pop().startsWith('.')) continue;
     if (view.getUint32(localOffset, true) !== SIG_LOCAL) continue;
 
-    // The local header's own name/extra lengths can differ from the central
-    // directory's, so they have to be read again here.
     const localNameLength = view.getUint16(localOffset + 26, true);
     const localExtraLength = view.getUint16(localOffset + 28, true);
     const dataStart = localOffset + 30 + localNameLength + localExtraLength;
@@ -83,7 +65,6 @@ export async function unzip(buffer) {
   return out;
 }
 
-/** Case-insensitive lookup by extension, ignoring folder nesting. */
 export function findByExtension(files, extension) {
   const suffix = `.${extension.toLowerCase()}`;
   for (const [name, data] of files) {

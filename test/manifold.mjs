@@ -1,20 +1,3 @@
-/**
- * Manifold analysis of an exported 3MF, done the way a slicer does it.
- *
- * The build-time tests check the in-memory mesh per part. That is not the same
- * thing a slicer sees: it reads the *file*, welds vertices by the coordinates
- * actually written there, and reports any edge that is not shared by exactly
- * two triangles. This reproduces that, and separates the two mechanisms that
- * can produce a bad count:
- *
- *   - per-object holes  — an edge with one triangle: a genuine leak
- *   - shared interior   — an edge with four: two parts meeting face to face,
- *                         which is closed but not manifold
- *
- *   node test/manifold.mjs [path/to/model.3mf]
- */
-
-
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -23,7 +6,6 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const file = process.argv[2] || join(HERE, 'out', 'manhattan-midtown.3mf');
 
 function readModelXml(path) {
-  // Avoid a zip dependency: unzip is present everywhere this runs.
   return execFileSync('unzip', ['-p', path, '3D/3dmodel.model'], {
     maxBuffer: 1 << 30,
     encoding: 'utf8',
@@ -57,10 +39,6 @@ function parseObjects(xml) {
   return objects;
 }
 
-/**
- * Weld by the exact text written to the file — the same information the slicer
- * has. Returns edge incidence counts keyed by welded vertex pair.
- */
 function analyse(objects, { merge }) {
   const key = new Map();
   const idOf = (v) => {
@@ -97,14 +75,13 @@ function analyse(objects, { merge }) {
       bump(c, a);
     }
     if (!merge) {
-      // Restart the vertex map per object so objects are judged in isolation.
       key.clear();
     }
   }
 
-  let boundary = 0;   // 1 incident triangle: a hole
-  let shared = 0;     // 4+: two closed shells meeting
-  let odd = 0;        // 3, 5, …: genuinely broken
+  let boundary = 0;
+  let shared = 0;
+  let odd = 0;
   for (const [, n] of edges) {
     if (n === 2) continue;
     if (n === 1) boundary++;

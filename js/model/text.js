@@ -1,19 +1,3 @@
-/**
- * Vector text from a three.js "typeface" font, without pulling three.js into
- * the worker.
- *
- * The typeface JSON format is a thin wrapper around per-glyph path strings:
- *
- *   m x y                        moveTo
- *   l x y                        lineTo
- *   q  x y  cx cy                quadratic — endpoint first, then control
- *   b  x y  c1x c1y  c2x c2y     cubic — endpoint first, then both controls
- *
- * Glyph counters (the hole in an "o") arrive as extra subpaths with no
- * orientation guarantee, so the subpaths are combined with an even-odd XOR
- * rather than by guessing at winding.
- */
-
 import polygonClipping from '../../vendor/polygon-clipping.js';
 import { closeRing, dedupe } from '../core/geom.js';
 
@@ -45,7 +29,6 @@ function cubicPoints(x0, y0, c1x, c1y, c2x, c2y, x1, y1) {
   return pts;
 }
 
-/** Subpath rings for one glyph, in font units. */
 function glyphRings(glyph) {
   if (!glyph || !glyph.o) return [];
   const tokens = glyph.o.split(/\s+/).filter(Boolean);
@@ -103,8 +86,6 @@ function glyphRings(glyph) {
         current = null;
         break;
       default:
-        // Unknown command: skip its operand and keep going rather than
-        // abandoning the whole glyph.
         i++;
         break;
     }
@@ -113,7 +94,6 @@ function glyphRings(glyph) {
   return rings;
 }
 
-/** Even-odd combine of a glyph's subpaths, so counters become real holes. */
 function glyphMultiPolygon(glyph) {
   const rings = glyphRings(glyph)
     .map((r) => closeRing(dedupe(r)))
@@ -133,20 +113,6 @@ function transformMp(mp, scale, dx, dy) {
   );
 }
 
-/**
- * Lay out a string as a multipolygon.
- *
- * @param {object} font   parsed typeface JSON
- * @param {string} text
- * @param {object} opts
- * @param {number} opts.size      cap height target, mm
- * @param {number} [opts.tracking=0]  extra letter spacing, mm
- * @param {string} [opts.align='center']  'left' | 'center' | 'right'
- * @param {number} [opts.x=0]  anchor x
- * @param {number} [opts.y=0]  baseline y
- * @param {number} [opts.maxWidth]  shrink to fit if the line overruns
- * @returns {{polygons: Array, width: number, height: number, scale: number}}
- */
 export function layoutText(font, text, opts = {}) {
   const { size = 6, tracking = 0, align = 'center', x = 0, y = 0, maxWidth = 0 } = opts;
   if (!font || !text) return { polygons: [], width: 0, height: 0, scale: 0 };

@@ -1,15 +1,5 @@
-/**
- * Reading OSM tags as printable dimensions.
- *
- * OSM height data is patchy and inconsistent: some cities have surveyed
- * heights, most have `building:levels`, plenty have nothing at all. The
- * fallback chain here is deliberately conservative — a plausible guess reads as
- * a city; a wild one reads as a bug.
- */
-
 const METRES_PER_LEVEL = 3.2;
 
-/** "25", "25 m", "82'", "25.5 metres" -> metres. */
 function parseLength(value) {
   if (value == null) return null;
   const s = String(value).trim().toLowerCase();
@@ -28,10 +18,6 @@ function parseLength(value) {
   return m[2] === 'ft' || m[2] === 'feet' ? n * 0.3048 : n;
 }
 
-/**
- * Typical heights by building class, in metres. Only consulted when the data
- * carries neither a height nor a level count.
- */
 const DEFAULT_HEIGHTS = {
   skyscraper: 120,
   cathedral: 40,
@@ -72,11 +58,6 @@ const DEFAULT_HEIGHTS = {
   kiosk: 3,
 };
 
-/**
- * Real-world building height in metres.
- * @param {object} tags
- * @param {number} fallback default when nothing at all is tagged
- */
 export function buildingHeight(tags, fallback = 9) {
   const explicit =
     parseLength(tags.height) ??
@@ -100,12 +81,6 @@ export function buildingHeight(tags, fallback = 9) {
   return fallback;
 }
 
-/**
- * OSM's zoo of roof shapes, folded onto the three the mesh builder knows how
- * to make. Hips, gambrels and mansards all read as "a ridge" at print scale;
- * domes and onions read as "a point". Anything unrecognised falls through to
- * the per-building-type default below.
- */
 const ROOF_SHAPES = {
   gabled: 'gabled',
   hipped: 'gabled',
@@ -126,14 +101,6 @@ const ROOF_SHAPES = {
   flat: 'flat',
 };
 
-/**
- * Building types that get a gabled roof even when nothing is tagged. This is
- * the set where flat-topped boxes read as wrong: OSM's residential coverage
- * is overwhelmingly untagged, and it is exactly the part of the map users
- * mean when they say "the houses are just squares". Deliberately absent:
- * apartments and commercial (usually genuinely flat), garages and
- * `building=roof` canopies.
- */
 const GABLED_BY_DEFAULT = new Set([
   'house',
   'detached',
@@ -166,15 +133,6 @@ function parseDirection(value) {
   return COMPASS[s.toUpperCase()] ?? null;
 }
 
-/**
- * How this building's roof should print, or null for flat.
- *
- * @param {object} tags
- * @param {object} [ctx]  {areaM2, heightM} of the specific footprint —
- *                        untyped buildings are judged by their size
- * @returns {{shape, heightM, orientation, directionDeg}|null}
- *          heightM null means "derive from the footprint at a fixed pitch".
- */
 export function roofSpec(tags, ctx = {}) {
   let shape = ROOF_SHAPES[tags['roof:shape']] ?? null;
   if (!shape) {
@@ -182,11 +140,6 @@ export function roofSpec(tags, ctx = {}) {
     if (kind && GABLED_BY_DEFAULT.has(kind)) {
       shape = 'gabled';
     } else if (kind === 'yes' || kind === 'residential') {
-      // The neighbourhoods people actually print are mostly machine-traced:
-      // every house an untyped `building=yes` rectangle. A small, low,
-      // untyped footprint is a house in all but name, so it gets the house
-      // treatment — the area gate keeps big-box stores flat, the height
-      // gate keeps anything remotely tower-shaped flat.
       const area = ctx.areaM2 ?? 0;
       const tall = (ctx.heightM ?? 99) > 12;
       if (area > 25 && area <= 400 && !tall) shape = 'gabled';
@@ -207,11 +160,6 @@ export function roofSpec(tags, ctx = {}) {
   };
 }
 
-/**
- * Road widths in metres, keyed by `highway`. These are carriageway widths
- * including shoulders — a printed street reads better slightly wide than
- * slightly thin.
- */
 const ROAD_WIDTHS = {
   motorway: 22,
   motorway_link: 12,
@@ -240,7 +188,6 @@ const ROAD_WIDTHS = {
   corridor: 2,
 };
 
-/** Broad classes drive both default visibility and optional colour splitting. */
 export const ROAD_CLASSES = {
   motorway: 'major',
   motorway_link: 'major',
@@ -273,10 +220,6 @@ export function roadClass(tags) {
   return ROAD_CLASSES[tags.highway] || 'minor';
 }
 
-/**
- * Road width in metres, refined by lane count where it is tagged.
- * @returns {number|null} null for road types we deliberately never print
- */
 export function roadWidth(tags) {
   const explicit = parseLength(tags.width);
   if (explicit && explicit > 0.5) return Math.min(explicit, 40);
@@ -305,7 +248,6 @@ export function railWidth(tags) {
   return RAIL_WIDTHS[tags.railway] || null;
 }
 
-/** Underground features have no business on the surface of a model. */
 export function isUnderground(tags) {
   if (tags.tunnel && tags.tunnel !== 'no') return true;
   if (tags.location === 'underground') return true;
@@ -318,7 +260,6 @@ export function isBridge(tags) {
   return Boolean(tags.bridge && tags.bridge !== 'no');
 }
 
-/** Water bodies tagged as tunnels/culverts are not visible surface water. */
 export function isVisibleWater(tags) {
   if (tags.tunnel && tags.tunnel !== 'no') return false;
   if (tags.covered === 'yes') return false;
@@ -326,7 +267,6 @@ export function isVisibleWater(tags) {
   return true;
 }
 
-/** Linear waterways get a width so streams and canals still read at scale. */
 const WATERWAY_WIDTHS = { river: 30, canal: 15, stream: 4, ditch: 2, drain: 2 };
 
 export function waterwayWidth(tags) {
@@ -335,7 +275,6 @@ export function waterwayWidth(tags) {
   return WATERWAY_WIDTHS[tags.waterway] || null;
 }
 
-/** A readable name for the nameplate, when the user has not typed one. */
 export function featureName(tags) {
   return tags['name:en'] || tags.name || '';
 }

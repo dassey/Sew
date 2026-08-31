@@ -1,12 +1,3 @@
-/**
- * Binary STL.
- *
- * The lowest common denominator of 3D printing: no colour, no units, no
- * metadata, understood by everything. Geometry is already Z-up in millimetres,
- * which is exactly what every slicer assumes an STL to be, so export is a
- * straight copy with per-facet normals computed on the way out.
- */
-
 const HEADER_BYTES = 80;
 
 function countTriangles(parts) {
@@ -15,21 +6,10 @@ function countTriangles(parts) {
   return n;
 }
 
-/**
- * @param {Array} parts objects with {positions: Float32Array, indices}
- * @param {string} [header] up to 80 bytes of banner text
- * @returns {Blob}
- */
 export function toBinaryStl(parts, header = '') {
   return new Blob([toStlBuffer(parts, header)], { type: 'model/stl' });
 }
 
-/**
- * Same output as `toBinaryStl` but as a raw ArrayBuffer, for callers that need
- * to embed the bytes in an archive rather than hand them to a download.
- *
- * @returns {ArrayBuffer}
- */
 export function toStlBuffer(parts, header = '') {
   const triangles = countTriangles(parts);
   const buffer = new ArrayBuffer(HEADER_BYTES + 4 + triangles * 50);

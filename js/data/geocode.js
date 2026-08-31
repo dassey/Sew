@@ -1,16 +1,3 @@
-/**
- * Place lookup.
- *
- * Two services, each used for what it is actually good at:
- *   - Photon (komoot) powers the as-you-type suggestions. It is purpose-built
- *     for typeahead and explicitly tolerates the request rate that implies.
- *   - Nominatim handles committed lookups and reverse geocoding, where its
- *     richer address structuring is worth the 1 req/s ceiling.
- *
- * Both are free OSM services run on donated hardware. Requests are debounced,
- * throttled and cached so this tool stays a good citizen.
- */
-
 const PHOTON = 'https://photon.komoot.io/api/';
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
 
@@ -23,7 +10,6 @@ async function throttleNominatim() {
   lastNominatimCall = Date.now();
 }
 
-/** "40.7128, -74.006" and friends — skip the network entirely. */
 function parseLatLon(query) {
   const m = query
     .trim()
@@ -62,26 +48,10 @@ function photonLabel(props) {
   return { main, detail };
 }
 
-/**
- * Does this look like a street address rather than a place name?
- *
- * "6624 N Broadway, Gladstone MO" — a house number followed by a street. The
- * distinction matters because Photon does not index house numbers usefully:
- * asked for that address it returns the Gladstone post office (which is at
- * number 7170) and three segments of the street, but never the building.
- * Nominatim resolves it exactly. So address-shaped queries go to Nominatim
- * even though it is the slower, more rate-limited of the two.
- */
 export function looksLikeStreetAddress(query) {
   return /^\s*\d{1,6}[a-z]?\s+\S+/i.test(query) || /^\s*\d{1,6}[a-z]?\s*,/i.test(query);
 }
 
-/**
- * Autocomplete suggestions.
- * @param {string} query
- * @param {object} [opts] `near` biases results towards {lat, lon}
- * @returns {Promise<Array<{lat, lon, label, detail, kind, bbox?}>>}
- */
 export async function suggest(query, opts = {}) {
   const q = query.trim();
   if (q.length < 2) return [];
@@ -92,8 +62,6 @@ export async function suggest(query, opts = {}) {
   if (looksLikeStreetAddress(q)) {
     try {
       const exact = await searchNominatim(q, 6, opts.signal);
-      // Photon still helps when the number is not in OSM at all, so only take
-      // over when Nominatim actually resolved something.
       if (exact.length) return exact;
     } catch (err) {
       if (err.name === 'AbortError') return [];
@@ -127,7 +95,7 @@ export async function suggest(query, opts = {}) {
         detail,
         kind: f.properties?.osm_value || f.properties?.type || 'place',
         bbox: f.properties?.extent
-          ? // Photon extent is [minLon, maxLat, maxLon, minLat]
+          ?
             {
               minLon: f.properties.extent[0],
               maxLat: f.properties.extent[1],
@@ -139,7 +107,6 @@ export async function suggest(query, opts = {}) {
     });
   } catch (err) {
     if (err.name === 'AbortError') return [];
-    // Photon down: fall through to Nominatim so search still works.
     try {
       results = await searchNominatim(q, 8);
     } catch {
@@ -151,14 +118,11 @@ export async function suggest(query, opts = {}) {
   return results;
 }
 
-/** Structured lookup via Nominatim. Handles house numbers and postcodes well. */
 export async function searchNominatim(query, limit = 5, signal) {
   const key = `nom:${query}:${limit}`;
   if (cache.has(key)) return cache.get(key);
 
   await throttleNominatim();
-  // The throttle can hold a request for a second; by then the user may have
-  // typed on, so re-check before spending the call.
   if (signal?.aborted) {
     const err = new Error('aborted');
     err.name = 'AbortError';
@@ -178,8 +142,6 @@ export async function searchNominatim(query, limit = 5, signal) {
   const out = data.map((d) => {
     const a = d.address || {};
     const street = a.road || a.pedestrian || a.footway || '';
-    // A house has no name of its own, and display_name would show it as a bare
-    // number. Rebuild "6624 North Broadway Avenue" so the list is readable.
     const label = a.house_number && street
       ? `${a.house_number} ${street}`
       : d.name || street || d.display_name.split(',')[0];
@@ -207,7 +169,6 @@ export async function searchNominatim(query, limit = 5, signal) {
   return out;
 }
 
-/** Coordinates -> a human-readable place name, for auto-filling the nameplate. */
 export async function reverse(lat, lon) {
   const key = `rev:${lat.toFixed(4)},${lon.toFixed(4)}`;
   if (cache.has(key)) return cache.get(key);
@@ -238,7 +199,6 @@ export async function reverse(lat, lon) {
   }
 }
 
-/** Format coordinates the way a nameplate wants them. */
 export function formatCoords(lat, lon) {
   const ns = lat >= 0 ? 'N' : 'S';
   const ew = lon >= 0 ? 'E' : 'W';

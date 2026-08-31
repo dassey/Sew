@@ -1,18 +1,3 @@
-/**
- * Skyline Forge — application shell.
- *
- * Holds the single settings object every other module reads, and decides what
- * a given change actually invalidates:
- *
- *   style    — colours only. Repaint the existing meshes, touch nothing else.
- *   geometry — rebuild the mesh from cached OSM features, no network.
- *   data     — the cached features no longer cover what is being asked for,
- *              so a download is required before anything can be rebuilt.
- *
- * Getting that distinction right is what keeps dragging a slider instant while
- * still being a good neighbour to the free public APIs behind it.
- */
-
 import { defaultSettings, mergeSettings, PARTS } from './model/parts.js';
 import { SHAPES, buildShapeRing, shapeOuterRadius } from './core/shapes.js';
 import { createProjection } from './core/projection.js';
@@ -62,7 +47,7 @@ class App {
 
     this.cache = { bbox: null, layers: [], detail: null, features: null };
     this.imports = [];
-    this.merged = null; // OSM features with any uploads folded in
+    this.merged = null;
     this.exportFormat = '3mf';
     this.dataStale = true;
 
@@ -81,12 +66,8 @@ class App {
     this.syncUi();
 
     this.loadFont();
-    // A blank canvas on first load makes the tool look broken; give people a
-    // finished model to poke at instead.
     this.generate({ silent: true });
   }
-
-  /* ================= settings ================= */
 
   loadSettings() {
     const fromHash = this.readHash();
@@ -94,14 +75,14 @@ class App {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return mergeSettings(defaultSettings(), JSON.parse(raw));
-    } catch { /* corrupt or blocked storage — fall through to defaults */ }
+    } catch { }
     return defaultSettings();
   }
 
   saveSettings() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
-    } catch { /* private mode; settings just will not persist */ }
+    } catch { }
   }
 
   readHash() {
@@ -139,11 +120,7 @@ class App {
     target[last] = value;
   }
 
-  /* ================= static UI ================= */
-
   buildStaticUi() {
-    // Shape picker — icons are drawn from the same generator the mesh uses, so
-    // the button always shows the shape you will actually get.
     const grid = this.el['shape-grid'];
     grid.innerHTML = '';
     for (const shape of SHAPES) {
@@ -166,7 +143,6 @@ class App {
       grid.appendChild(btn);
     }
 
-    // Layer rows
     const list = this.el['layer-list'];
     list.innerHTML = '';
     this.layerRows = new Map();
@@ -187,7 +163,6 @@ class App {
         check.addEventListener('change', () => {
           this.settings.layers[toggleKey] = check.checked;
           this.syncUi();
-          // Trees are the one layer whose data we do not download up front.
           this.onChange(toggleKey === 'trees' ? 'data' : 'geometry');
         });
       } else {
@@ -209,7 +184,6 @@ class App {
       btn.addEventListener('click', () => this.applyPalette(btn.dataset.palette));
     }
 
-    // Travel modes
     const seg = this.el['route-profile'];
     seg.innerHTML = '';
     for (const p of routing.PROFILES) {
@@ -226,7 +200,6 @@ class App {
       seg.appendChild(b);
     }
 
-    // Export formats
     const formats = this.el['format-list'];
     formats.innerHTML = '';
     for (const f of FORMATS) {
@@ -243,7 +216,6 @@ class App {
       formats.appendChild(opt);
     }
 
-    // Base maps
     const basemap = this.el['basemap-select'];
     basemap.innerHTML = '';
     for (const b of BASEMAPS) {
@@ -254,7 +226,6 @@ class App {
     }
     basemap.addEventListener('change', () => this.picker.setBasemap(basemap.value));
 
-    // Collapsible panels
     for (const panel of document.querySelectorAll('.panel')) {
       const head = panel.querySelector('.panel-head');
       head.addEventListener('click', () => {
@@ -264,8 +235,6 @@ class App {
       });
     }
   }
-
-  /* ================= map & viewer ================= */
 
   initMap() {
     this.picker = new MapPicker(this.el.map, {
@@ -321,8 +290,6 @@ class App {
       this.toast('Nameplate lettering is unavailable — font failed to load.', 'warn');
     }
   }
-
-  /* ================= control binding ================= */
 
   bindControls() {
     this.bindings = [];
@@ -417,8 +384,6 @@ class App {
     for (const tab of document.querySelectorAll('.stage-tab')) {
       tab.addEventListener('click', () => this.showPane(tab.dataset.view));
     }
-    // Split does not fit on a phone, so start on the map and let the tabs do
-    // the switching.
     if (this.isNarrow()) {
       this.showPane('map');
       this.clearStale();
@@ -439,14 +404,12 @@ class App {
     el['help-btn'].addEventListener('click', () => el.guide.showModal());
     el['guide-close'].addEventListener('click', () => el.guide.close());
 
-    // Bottom sheet (mobile only; the handle is display:none on desktop).
     const handle = el['sheet-handle'];
     handle.addEventListener('click', () => {
       const open = el.sidebar.classList.toggle('is-open');
       handle.setAttribute('aria-expanded', String(open));
       if (open) el.sidebar.scrollTop = 0;
     });
-    // A generate always means "show me the result", so get out of the way.
     el['generate-btn'].addEventListener('click', () => {
       if (window.matchMedia('(max-width: 860px)').matches) {
         el.sidebar.classList.remove('is-open');
@@ -474,8 +437,6 @@ class App {
       this.viewer.frameModel();
     });
   }
-
-  /* ================= search ================= */
 
   wireSearch() {
     const input = this.el['search-input'];
@@ -529,8 +490,6 @@ class App {
       controller?.abort();
       const q = input.value.trim();
       if (q.length < 2) return close();
-      // Street addresses are resolved by Nominatim, which allows one request a
-      // second, so wait longer before spending one.
       const wait = geocode.looksLikeStreetAddress(q) ? 550 : 220;
       timer = setTimeout(async () => {
         controller = new AbortController();
@@ -541,7 +500,7 @@ class App {
               signal: controller.signal,
             })
           );
-        } catch { /* aborted or offline; leave the previous list up */ }
+        } catch { }
       }, wait);
     });
 
@@ -590,9 +549,6 @@ class App {
     this.settings.location.lon = place.lon;
     this.settings.location.label = place.label;
 
-    // Fit the plate to the place: a whole city wants kilometres, a single
-    // address wants the surrounding few blocks. A house does have a bounding
-    // box, but it is the size of the building, so it is handled first.
     if (place.kind === 'house' || place.kind === 'coordinates') {
       this.settings.size.areaMetres = clamp(this.settings.size.areaMetres, 300, 1200);
     } else if (place.bbox) {
@@ -603,7 +559,6 @@ class App {
     }
 
     if (!this.settings.nameplate.title) {
-      // "6624 NORTH BROADWAY AVENUE" is a poor nameplate; the town is better.
       const source =
         place.kind === 'house' ? place.detail.split(',')[0].trim() || place.label : place.label;
       this.settings.nameplate.title = source.toUpperCase().slice(0, 40);
@@ -647,8 +602,6 @@ class App {
     this.syncUi();
     this.onChange('geometry');
   }
-
-  /* ================= route ================= */
 
   renderWaypoints() {
     const list = this.el['waypoint-list'];
@@ -720,7 +673,6 @@ class App {
       this.picker.setRoute(track.points);
       this.renderWaypoints();
 
-      // Centre the plate on the track and widen it enough to hold the whole run.
       const bbox = bboxOfPoints(track.points);
       this.settings.location.lat = (bbox.minLat + bbox.maxLat) / 2;
       this.settings.location.lon = (bbox.minLon + bbox.maxLon) / 2;
@@ -746,15 +698,11 @@ class App {
     }
   }
 
-  /* ================= imported data ================= */
-
   initImports() {
     this.importsPanel = new ImportsPanel({
       onChange: (datasets) => {
         this.imports = datasets;
         this.merged = null;
-        // An upload is already on the machine, so however much data arrives
-        // this is a geometry change and never needs a download.
         this.onChange('geometry');
       },
       onFocus: (bbox) => {
@@ -773,15 +721,12 @@ class App {
     this.importsPanel.restore();
   }
 
-  /** OSM features with the uploads folded in, recomputed only when either moves. */
   featuresForBuild() {
     if (!this.cache.features) return null;
     if (!this.imports.length) return this.cache.features;
     if (!this.merged) this.merged = applyImports(this.cache.features, this.imports).features;
     return this.merged;
   }
-
-  /* ================= change pipeline ================= */
 
   onChange(kind) {
     this.saveSettings();
@@ -810,11 +755,9 @@ class App {
   clearStale() {
     const btn = this.el['generate-btn'];
     btn.classList.remove('is-active');
-    // A phone header has room for one word, and it is the verb that matters.
     btn.querySelector('.btn-label').textContent = this.isNarrow() ? 'Generate' : 'Generate model';
   }
 
-  /** Bounding box the current plate needs, with a small margin. */
   requiredBbox() {
     const s = this.settings;
     const mmPerMetre = s.size.printMm / s.size.areaMetres;
@@ -865,8 +808,6 @@ class App {
     );
   }
 
-  /* ================= data + build ================= */
-
   async generate(opts = {}) {
     if (this.busy) return;
     this.setBusy(true);
@@ -874,7 +815,6 @@ class App {
 
     try {
       if (!this.cacheCovers()) {
-        // Over-fetch slightly so nudging the plate does not trigger a redownload.
         const bbox = padBbox(this.requiredBbox(), 0.18);
         const layers = this.requiredLayers();
         const query = overpass.buildQuery(bbox, layers);
@@ -922,7 +862,6 @@ class App {
     this.setBusy(true);
 
     if (this.settings.terrain.enabled && !this.heightGrid) {
-      // Terrain was switched on since the last download.
       try {
         this.heightGrid = await elevation.fetchHeightGrid(
           padBbox(this.requiredBbox(), 0.05),
@@ -985,8 +924,6 @@ class App {
     this.renderStats(msg.result);
     this.setBusy(false);
 
-    // On a phone the model lives behind a tab, so a build the user asked for
-    // should bring it to the front.
     if (this.isNarrow() && !this._silentJob) this.showPane('model');
 
     const { stats, warnings } = msg.result;
@@ -1016,8 +953,6 @@ class App {
   renderStats(result) {
     const { stats } = result;
     const cm3 = stats.volumeMm3 / 1000;
-    // ~55% effective density: these plates are thin enough to print near-solid,
-    // but the tall buildings still get infilled.
     const grams = cm3 * 1.24 * 0.55;
     this.el['status-stats'].innerHTML = [
       `<span class="s-dims"><b>${stats.widthMm.toFixed(0)}</b>×<b>${stats.depthMm.toFixed(0)}</b>×<b>${stats.heightMm.toFixed(1)}</b> mm</span>`,
@@ -1033,8 +968,6 @@ class App {
         `Real relief across this area: ${stats.terrainRelief.toFixed(0)} m.`;
     }
   }
-
-  /* ================= export ================= */
 
   doExport() {
     if (!this.model?.parts.length) return;
@@ -1098,8 +1031,6 @@ class App {
     this.toast('Back to defaults.');
   }
 
-  /* ================= UI sync ================= */
-
   syncUi() {
     for (const b of this.bindings) b.write(this.get(b.path));
 
@@ -1156,8 +1087,6 @@ class App {
       `1 cm of print = <b>${perCm < 1000 ? `${perCm.toFixed(0)} m` : `${(perCm / 1000).toFixed(2)} km`}</b> of city`;
   }
 
-  /* ================= feedback ================= */
-
   setBusy(busy) {
     this.busy = busy;
     const btn = this.el['generate-btn'];
@@ -1191,9 +1120,6 @@ class App {
   }
 }
 
-/* ================= helpers ================= */
-
-/** Which settings.layers flag (if any) controls a part. */
 function layerToggleKey(partId) {
   const map = {
     buildings: 'buildings',
@@ -1211,7 +1137,6 @@ function layerToggleKey(partId) {
   return map[partId] || null;
 }
 
-/** Paths whose change invalidates the downloaded OSM extract. */
 function isDataPath(path) {
   return path === 'size.areaMetres' || path.startsWith('location.');
 }
@@ -1242,7 +1167,6 @@ function bboxOfPoints(points) {
   return { minLat, minLon, maxLat, maxLon };
 }
 
-/** Longest side of a bbox, in metres. */
 function spanOfBbox(bbox) {
   const midLat = (bbox.minLat + bbox.maxLat) / 2;
   const mLat = (bbox.maxLat - bbox.minLat) * 111320;
@@ -1276,7 +1200,6 @@ function formatValue(value, fmt) {
   }
 }
 
-/** Shape button icons, traced from the real outline generator. */
 function shapeIcon(id) {
   if (id === 'custom') {
     return `<svg viewBox="0 0 100 100"><polygon points="14,34 52,10 90,30 80,84 26,90" stroke-dasharray="9 7"/></svg>`;
@@ -1288,8 +1211,6 @@ function shapeIcon(id) {
     .join(' ');
   return `<svg viewBox="0 0 100 100"><polygon points="${points}"/></svg>`;
 }
-
-/* ================= boot ================= */
 
 window.addEventListener('DOMContentLoaded', () => {
   window.skylineForge = new App();
