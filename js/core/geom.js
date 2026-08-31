@@ -1,38 +1,8 @@
-/**
- * 2D polygon toolkit.
- *
- * Everything downstream speaks the polygon-clipping data model so that boolean
- * ops are free of conversion cost:
- *
- *   Point        = [x, y]
- *   Ring         = Point[]            (closed; first point repeated at the end)
- *   Polygon      = Ring[]             (outer ring first, then holes)
- *   MultiPolygon = Polygon[]
- *
- * Units are millimetres in model space throughout.
- */
-
 import polygonClipping from '../../vendor/polygon-clipping.js';
 import earcut from '../../vendor/earcut.js';
 
-/* ------------------------------------------------------------------ *
- * Boolean operations
- * ------------------------------------------------------------------ */
-
-/** Printers resolve ~10 microns; 1 micron is well past anything visible. */
 const SNAP_MM = 0.001;
 
-/**
- * Round every coordinate onto a fixed grid and drop the duplicates that
- * creates.
- *
- * polygon-clipping's sweep line is exact-arithmetic in principle but fails in
- * practice on *nearly* coincident points — the classic "Unable to find segment
- * in SweepLine tree" — and OSM geometry, once projected and scaled to
- * millimetres, is full of vertices a few nanometres apart. Collapsing them onto
- * a grid turns "nearly the same point" into "the same point", which the
- * algorithm handles correctly.
- */
 export function snapMultiPolygon(mp, step = SNAP_MM) {
   const k = 1 / step;
   const out = [];
@@ -54,14 +24,6 @@ export function snapMultiPolygon(mp, step = SNAP_MM) {
   return out;
 }
 
-/**
- * Every boolean call goes through this guard.
- *
- * First attempt runs on the input as-is. If the sweep line throws, the inputs
- * are snapped to the micron grid and it is retried — which recovers the great
- * majority of real failures. Only if that also throws do we fall back, because
- * one pathological way must never take down an entire model build.
- */
 function guarded(op, fallback, ...args) {
   try {
     const out = polygonClipping[op](...args);
@@ -77,20 +39,11 @@ function guarded(op, fallback, ...args) {
   }
 }
 
-/** Normalise/merge a multipolygon; also repairs self-intersections. */
 export function normalize(mp) {
   if (!mp || !mp.length) return [];
   return guarded('union', mp, mp);
 }
 
-/**
- * Union a large pile of polygons in chunks.
- *
- * Sweep-line cost grows super-linearly with segment count, and so does the
- * chance of hitting a robustness bug. Merging a dense city's road buffers in
- * batches keeps each sweep small, and confines any failure that does happen to
- * one batch instead of losing the whole layer.
- */
 export function unionBatched(polys, batchSize = 200) {
   if (!polys.length) return [];
   if (polys.length <= batchSize) return normalize(polys);
@@ -126,10 +79,6 @@ export function intersection(a, b) {
   return guarded('intersection', [], a, b);
 }
 
-/**
- * Subtract every mask in turn. Used to build the disjoint layer partition,
- * where each successive layer is carved out of what the ones above left behind.
- */
 export function differenceAll(subject, masks) {
   let out = subject;
   for (const m of masks) {
@@ -139,14 +88,6 @@ export function differenceAll(subject, masks) {
   return out;
 }
 
-/* ------------------------------------------------------------------ *
- * Ring utilities
- * ------------------------------------------------------------------ */
-
-/**
- * Signed shoelace area. Positive means counter-clockwise, which is the
- * convention the whole extruder depends on — see `orientPolygon`.
- */
 export function ringArea(ring) {
   let a = 0;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
@@ -163,7 +104,6 @@ export function closeRing(ring) {
   return ring;
 }
 
-/** Total surface area of a multipolygon (outer rings minus holes), mm². */
 export function multiPolygonArea(mp) {
   let total = 0;
   for (const poly of mp) {
@@ -175,14 +115,6 @@ export function multiPolygonArea(mp) {
   return total;
 }
 
-/**
- * Discard slivers that would print as nothing but stringing.
- *
- * Only whole polygons are dropped, never holes. A hole is where a
- * higher-priority layer has already claimed the ground — a small building
- * poking into a road, say — so filling one in does not remove a sliver, it
- * makes two parts overlap and puts the wrong colour on top.
- */
 export function dropTinyPolygons(mp, minArea) {
   return mp.filter((poly) => Math.abs(ringArea(poly[0])) >= minArea);
 }
@@ -200,7 +132,6 @@ export function boundsOf(mp) {
   return { minX, minY, maxX, maxY };
 }
 
-/** Convex hull (monotone chain), counter-clockwise, duplicates dropped. */
 export function convexHull(points) {
   const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const uniq = [];
@@ -231,17 +162,6 @@ export function convexHull(points) {
   return lower.concat(upper);
 }
 
-/**
- * Minimum-area oriented bounding box, via rotating calipers over the hull.
- *
- * The roof builder reads the long axis as the ridge direction, which is the
- * right guess for nearly every house — including footprints already clipped
- * by the plate edge, which axis-aligned bounds would misjudge badly.
- *
- * @returns {{cx, cy, ux, uy, vx, vy, halfLength, halfWidth}|null}
- *          `u` is the unit long axis, `v` the unit short axis,
- *          `halfLength >= halfWidth`. Null for degenerate input.
- */
 export function orientedBounds(ring) {
   const hull = convexHull(ring);
   if (hull.length < 3) return null;
@@ -316,11 +236,6 @@ export function pointInMultiPolygon(pt, mp) {
   return false;
 }
 
-/* ------------------------------------------------------------------ *
- * Simplification and densification
- * ------------------------------------------------------------------ */
-
-/** Douglas–Peucker. Cuts OSM vertex counts by 60-80% at printable tolerances. */
 export function simplify(points, tolerance) {
   if (points.length <= 2 || tolerance <= 0) return points;
   const tol2 = tolerance * tolerance;
@@ -362,7 +277,6 @@ export function simplify(points, tolerance) {
   return out;
 }
 
-/** Drop consecutive duplicates — polygon-clipping chokes on zero-length edges. */
 export function dedupe(points, eps = 1e-7) {
   const out = [];
   for (const p of points) {
@@ -374,11 +288,6 @@ export function dedupe(points, eps = 1e-7) {
   return out;
 }
 
-/**
- * Insert intermediate vertices so no edge exceeds `maxLen`. Terrain draping
- * samples heights per-vertex, so a long undivided edge would tunnel straight
- * through a hill.
- */
 export function densify(points, maxLen) {
   if (maxLen <= 0) return points;
   const out = [];
@@ -414,12 +323,7 @@ export function simplifyMultiPolygon(mp, tolerance) {
   return out;
 }
 
-/* ------------------------------------------------------------------ *
- * Polyline buffering (roads, rail, routes)
- * ------------------------------------------------------------------ */
-
 function arcPoints(cx, cy, r, a0, a1, segments) {
-  // Sweep the short way round, which is always the outside of the turn.
   let delta = a1 - a0;
   while (delta > Math.PI) delta -= 2 * Math.PI;
   while (delta < -Math.PI) delta += 2 * Math.PI;
@@ -432,15 +336,6 @@ function arcPoints(cx, cy, r, a0, a1, segments) {
   return pts;
 }
 
-/**
- * Offset a polyline into a closed ring of half-width `hw`.
- *
- * Walks the left side start-to-end and the right side end-to-start, inserting
- * a rounded fillet on the outside of each turn and a plain miter/bevel on the
- * inside. Tight switchbacks can still fold the ring onto itself; `normalize()`
- * downstream repairs that, which is why callers should always run the result
- * through a union rather than triangulating it directly.
- */
 export function bufferPolyline(points, hw, opts = {}) {
   const { capStyle = 'round', arcSegments = 8 } = opts;
   const pts = dedupe(points);
@@ -454,7 +349,7 @@ export function bufferPolyline(points, hw, opts = {}) {
     const dy = pts[i + 1][1] - pts[i][1];
     const len = Math.hypot(dx, dy) || 1;
     dirs.push([dx / len, dy / len]);
-    norms.push([-dy / len, dx / len]); // left-hand normal
+    norms.push([-dy / len, dx / len]);
   }
 
   const side = (sign) => {
@@ -490,15 +385,6 @@ export function bufferPolyline(points, hw, opts = {}) {
     return out;
   };
 
-  /**
-   * Half-turn cap.
-   *
-   * Both caps sweep by -PI: the end cap starts at the left offset and turns
-   * through the direction of travel, the start cap starts at the right offset
-   * and turns through the reverse. Interpolating naively between the two offset
-   * angles instead would take the near side for one of them and fold the cap
-   * back inside the buffer.
-   */
   const cap = (at, dir, atEnd) => {
     if (capStyle === 'butt') return [];
     const base = Math.atan2(dir[1], dir[0]);
@@ -536,7 +422,6 @@ export function bufferPolyline(points, hw, opts = {}) {
   return closeRing(dedupe(ring));
 }
 
-/** Buffer many polylines and merge them into one clean multipolygon. */
 export function bufferPolylines(lines, halfWidthFor, opts = {}) {
   const rings = [];
   for (let i = 0; i < lines.length; i++) {
@@ -548,14 +433,6 @@ export function bufferPolylines(lines, halfWidthFor, opts = {}) {
   return unionBatched(rings);
 }
 
-/**
- * A band of half-width `hw` straddling every ring of a multipolygon.
- *
- * Built from per-edge quads plus a disc at each vertex rather than from
- * `bufferPolyline`, because a closed ring offset as a polyline produces a
- * zero-width slit at the seam that boolean normalisation cannot reliably heal.
- * Intersecting the band back with the plate yields the inward frame.
- */
 export function bandAroundRings(mp, hw, discSegments = 8) {
   const polys = [];
   for (const poly of mp) {
@@ -584,7 +461,6 @@ export function bandAroundRings(mp, hw, discSegments = 8) {
   return polys.length ? normalize(polys) : [];
 }
 
-/** Regular n-gon, used for tree trunks and round pins. */
 export function circleRing(cx, cy, r, segments = 12) {
   const ring = [];
   for (let i = 0; i < segments; i++) {
@@ -594,25 +470,13 @@ export function circleRing(cx, cy, r, segments = 12) {
   return closeRing(ring);
 }
 
-/* ------------------------------------------------------------------ *
- * Triangulation
- * ------------------------------------------------------------------ */
-
-/**
- * Triangulate one polygon (outer ring + holes).
- *
- * @returns {{flat: number[], indices: number[], complete: boolean}|null}
- *   `complete` is false when earcut could not fully triangulate — see below.
- */
 export function triangulatePolygon(poly) {
   const flat = [];
   const holes = [];
-  const spans = []; // [startVertex, length] per ring that made it into `flat`
+  const spans = [];
 
   for (let r = 0; r < poly.length; r++) {
     const ring = poly[r];
-    // earcut wants open rings; the duplicated closing vertex creates
-    // zero-area ears that show up as slivers in the output mesh.
     const end = ring.length > 1 &&
       ring[0][0] === ring[ring.length - 1][0] &&
       ring[0][1] === ring[ring.length - 1][1]
@@ -634,14 +498,6 @@ export function triangulatePolygon(poly) {
   let complete = boundaryIsRings(boundary, spans, vertexCount);
 
   if (!complete) {
-    // Earcut has emitted triangles outside the polygon. It does this on rings
-    // that touch themselves — which boolean output produces legitimately, and
-    // which a city's worth of merged road buffers produces constantly.
-    //
-    // Left in place these "flaps" spill a layer's colour onto whatever is next
-    // to it, so they are dropped by testing each triangle's centroid against
-    // the polygon. The cap may then have a small gap, but the walls are welded
-    // to the boundary rather than to the rings, so the solid stays closed.
     const kept = [];
     for (let i = 0; i < indices.length; i += 3) {
       const a = indices[i] * 2;
@@ -663,7 +519,6 @@ export function triangulatePolygon(poly) {
   return { flat, indices, boundary, complete };
 }
 
-/** Inside the outer ring and outside every hole. */
 function pointInPolygon(pt, poly) {
   if (!poly.length || !pointInRing(pt, poly[0])) return false;
   for (let i = 1; i < poly.length; i++) {
@@ -672,19 +527,6 @@ function pointInPolygon(pt, poly) {
   return true;
 }
 
-/**
- * Directed half-edges on the outside of a triangulation.
- *
- * These, not the input rings, are what the extruder welds side walls onto.
- * Earcut occasionally produces a boundary that is *not* the input ring — on
- * self-touching rings, which the union of many overlapping road buffers throws
- * off routinely — and walls built from the ring would then leave the solid
- * open. Reading the boundary back off the triangulation makes the result
- * watertight by construction, whatever earcut decided to do.
- *
- * A half-edge is on the boundary when it has no opposite twin; interior edges
- * always come in pairs.
- */
 export function capBoundary(indices, vertexCount) {
   const counts = new Map();
   const key = (a, b) => a * vertexCount + b;
@@ -710,7 +552,6 @@ export function capBoundary(indices, vertexCount) {
   return out;
 }
 
-/** Is the triangulation's boundary exactly the input rings, no more, no less? */
 function boundaryIsRings(boundary, spans, vertexCount) {
   let ringEdges = 0;
   for (const [, len] of spans) ringEdges += len;
@@ -729,22 +570,13 @@ function boundaryIsRings(boundary, spans, vertexCount) {
   return true;
 }
 
-/**
- * Cut a multipolygon into grid cells. Terrain draping needs top faces whose
- * triangles are small relative to the heightfield; earcut only ever emits
- * vertices on the input boundary, so a large flat region has to be pre-diced
- * or it will span hills in a single triangle.
- */
 export function gridSplit(mp, cellSize, bounds) {
   if (!mp.length) return [];
   const b = bounds || boundsOf(mp);
   const cols = Math.max(1, Math.ceil((b.maxX - b.minX) / cellSize));
   const rows = Math.max(1, Math.ceil((b.maxY - b.minY) / cellSize));
-  if (cols * rows > 4096) return mp; // not worth it; caller falls back to flat
+  if (cols * rows > 4096) return mp;
 
-  // Most polygons in a city layer are far smaller than a cell, so bucket by
-  // bounding box first. Intersecting every polygon against every cell instead
-  // is what turns a hilly city into a minute of boolean ops.
   const boxes = mp.map((poly) => {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const [x, y] of poly[0]) {
@@ -765,7 +597,6 @@ export function gridSplit(mp, cellSize, bounds) {
     const c1 = Math.floor((box.maxX - b.minX) / cellSize);
     const r0 = Math.floor((box.minY - b.minY) / cellSize);
     const r1 = Math.floor((box.maxY - b.minY) / cellSize);
-    // Already smaller than a cell and inside one: no dicing needed.
     if (c0 === c1 && r0 === r1) out.push(mp[i]);
     else pending.push({ poly: mp[i], c0, c1, r0, r1 });
   }

@@ -1,13 +1,3 @@
-/**
- * Minimal ZIP writer, store method only.
- *
- * A 3MF *is* a ZIP, and the per-part STL bundle wants one too, so rather than
- * pull in a compression library for files that are already mostly incompressible
- * binary meshes, this writes uncompressed entries. Every slicer and every OS
- * archive tool reads stored entries; the only cost is file size, which for a
- * text-heavy 3MF is the one case worth noting.
- */
-
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256);
   for (let n = 0; n < 256; n++) {
@@ -26,7 +16,6 @@ function crc32(bytes) {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-/** MS-DOS packed date/time, which is what the ZIP format still expects. */
 function dosDateTime(date) {
   const time =
     (date.getHours() << 11) |
@@ -43,10 +32,6 @@ function toBytes(content) {
   return new TextEncoder().encode(String(content));
 }
 
-/**
- * @param {Array<{name: string, data: string|Uint8Array|ArrayBuffer}>} entries
- * @returns {Blob} application/zip
- */
 export function createZip(entries, mimeType = 'application/zip') {
   const encoder = new TextEncoder();
   const { time, day } = dosDateTime(new Date());
@@ -73,8 +58,8 @@ export function createZip(entries, mimeType = 'application/zip') {
     offsets.push(offset);
     view.setUint32(offset, 0x04034b50, true);
     view.setUint16(offset + 4, 20, true);
-    view.setUint16(offset + 6, 0x0800, true); // UTF-8 filenames
-    view.setUint16(offset + 8, 0, true); // stored
+    view.setUint16(offset + 6, 0x0800, true);
+    view.setUint16(offset + 8, 0, true);
     view.setUint16(offset + 10, time, true);
     view.setUint16(offset + 12, day, true);
     view.setUint32(offset + 14, e.crc, true);

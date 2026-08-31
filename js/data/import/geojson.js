@@ -1,12 +1,3 @@
-/**
- * GeoJSON reader.
- *
- * The format everyone can produce — QGIS, ArcGIS, Overpass, geopandas, a
- * Python script — so it is the path of least resistance for bringing your own
- * data, and the one worth being most forgiving about.
- */
-
-/** Normalise anything GeoJSON-shaped into a flat feature list. */
 export function readGeoJson(text) {
   let root;
   try {
@@ -22,19 +13,13 @@ export function readGeoJson(text) {
   return { features, crs: namedCrs(root) };
 }
 
-/**
- * RFC 7946 fixed GeoJSON at WGS84, but ArcGIS and older QGIS still emit the
- * pre-2016 `crs` member, and honouring it is the difference between a map and
- * a dot in the Atlantic.
- */
 function namedCrs(root) {
   const name = root?.crs?.properties?.name;
   if (typeof name !== 'string') return null;
-  // "urn:ogc:def:crs:EPSG::26915" or "EPSG:26915"
   const match = name.match(/EPSG:{1,2}(\d+)/i);
   if (!match) return null;
   const code = Number(match[1]);
-  if (code === 4326 || code === 4269 || code === 84) return null; // already lat/lon
+  if (code === 4326 || code === 4269 || code === 84) return null;
   return `EPSG:${code}`;
 }
 
@@ -83,7 +68,6 @@ function collect(node, inherited, out) {
   }
 }
 
-/** Drop any third (altitude) ordinate; the plate supplies its own heights. */
 function xy(pair) {
   return [Number(pair[0]), Number(pair[1])];
 }

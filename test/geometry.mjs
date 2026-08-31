@@ -1,9 +1,3 @@
-/**
- * Unit tests for the geometry primitives that decide whether a print succeeds.
- *
- *   node test/geometry.mjs
- */
-
 import { MeshBuilder, extrudePolygon, addCone, orientPolygon } from '../js/core/mesh.js';
 import * as G from '../js/core/geom.js';
 import { buildShapeRing, SHAPES, inscribedRadiusOf } from '../js/core/shapes.js';
@@ -31,7 +25,6 @@ function near(label, actual, expected, tol = 1e-6) {
   ok(label, Math.abs(actual - expected) <= tol, `got ${actual}, want ${expected}`);
 }
 
-/** Unpaired half-edges; zero means a closed manifold surface. */
 function openEdges(mesh) {
   const p = mesh.positions;
   const key = (i) =>
@@ -61,9 +54,7 @@ const square = (s, cx = 0, cy = 0) =>
     [cx - s / 2, cy + s / 2],
   ]);
 
-/* ================================================================ */
 console.log('\nRing orientation');
-/* ================================================================ */
 {
   const ccw = square(10);
   ok('counter-clockwise ring has positive area', G.ringArea(ccw) > 0,
@@ -76,9 +67,7 @@ console.log('\nRing orientation');
   ok('orientPolygon makes holes clockwise', G.ringArea(oriented[1]) < 0);
 }
 
-/* ================================================================ */
 console.log('\nExtrusion — solid prism');
-/* ================================================================ */
 {
   const mesh = new MeshBuilder('t');
   extrudePolygon(mesh, [square(10)], 0, 3);
@@ -87,20 +76,15 @@ console.log('\nExtrusion — solid prism');
   ok('12 triangles for a box', mesh.triangleCount === 12, `got ${mesh.triangleCount}`);
 }
 
-/* ================================================================ */
 console.log('\nExtrusion — prism with a hole');
-/* ================================================================ */
 {
   const mesh = new MeshBuilder('t');
-  // A clockwise hole; extrudePolygon should reorient it either way.
   extrudePolygon(mesh, [square(10), [...square(4)].reverse()], 0, 2);
   near('volume of frame (100−16)×2', mesh.volume(), 168, 1e-3);
   ok('holed prism is watertight', openEdges(mesh) === 0, `${openEdges(mesh)} open edges`);
 }
 
-/* ================================================================ */
 console.log('\nExtrusion — reversed input ring');
-/* ================================================================ */
 {
   const mesh = new MeshBuilder('t');
   extrudePolygon(mesh, [[...square(6)].reverse()], 0, 5);
@@ -109,26 +93,20 @@ console.log('\nExtrusion — reversed input ring');
   near('volume is 6×6×5', mesh.volume(), 180, 1e-3);
 }
 
-/* ================================================================ */
 console.log('\nExtrusion — sloped top (terrain draping)');
-/* ================================================================ */
 {
   const mesh = new MeshBuilder('t');
-  // A ramp from z=1 at x=-5 to z=3 at x=+5; mean height 2 over a 10×10 base.
   extrudePolygon(mesh, [square(10)], 0, (x) => 2 + x / 5);
   near('volume of a ramp equals mean height × area', mesh.volume(), 200, 1e-2);
   ok('ramp is watertight', openEdges(mesh) === 0, `${openEdges(mesh)} open edges`);
 }
 
-/* ================================================================ */
 console.log('\nCones');
-/* ================================================================ */
 {
   const mesh = new MeshBuilder('t');
   addCone(mesh, 0, 0, 0, 4, 1, 0, 16);
   ok('cone has positive volume', mesh.volume() > 0, `got ${mesh.volume()}`);
   ok('cone is watertight', openEdges(mesh) === 0, `${openEdges(mesh)} open edges`);
-  // A 16-gon approximates π r² h / 3 = 4.19 from below.
   ok('cone volume is close to the analytic value',
     Math.abs(mesh.volume() - 4.18879) < 0.15, `got ${mesh.volume().toFixed(4)}`);
 
@@ -139,9 +117,7 @@ console.log('\nCones');
     Math.abs(cyl.volume() - 6.2832) < 0.05, `got ${cyl.volume().toFixed(4)}`);
 }
 
-/* ================================================================ */
 console.log('\nBoolean operations');
-/* ================================================================ */
 {
   const a = [[square(10)]];
   const b = [[square(10, 5, 5)]];
@@ -153,9 +129,7 @@ console.log('\nBoolean operations');
   ok('empty subject stays empty', G.difference([], a).length === 0);
 }
 
-/* ================================================================ */
 console.log('\nPolyline buffering');
-/* ================================================================ */
 {
   const line = [[0, 0], [20, 0]];
   const ring = G.bufferPolyline(line, 1, { capStyle: 'butt' });
@@ -167,7 +141,6 @@ console.log('\nPolyline buffering');
   ok('round caps add roughly a circle of area',
     roundArea > 42.5 && roundArea < 43.2, `got ${roundArea.toFixed(3)}`);
 
-  // An L-bend must not pinch shut or blow up on the inside of the turn.
   const bend = G.bufferPolylines([{ points: [[0, 0], [10, 0], [10, 10]] }], () => 1.5);
   const bendArea = G.multiPolygonArea(bend);
   ok('right-angle bend produces one clean polygon', bend.length === 1,
@@ -175,7 +148,6 @@ console.log('\nPolyline buffering');
   ok('bend area is plausible', bendArea > 55 && bendArea < 75,
     `got ${bendArea.toFixed(2)}`);
 
-  // A hairpin folds the offset onto itself; normalisation must repair it.
   const hairpin = G.bufferPolylines(
     [{ points: [[0, 0], [10, 0], [0, 0.6]] }],
     () => 1.2
@@ -192,9 +164,7 @@ console.log('\nPolyline buffering');
     `got ${buffered.length}`);
 }
 
-/* ================================================================ */
 console.log('\nSimplify & densify');
-/* ================================================================ */
 {
   const line = Array.from({ length: 50 }, (_, i) => [i, 0]);
   ok('collinear points collapse to two', G.simplify(line, 0.01).length === 2);
@@ -210,9 +180,7 @@ console.log('\nSimplify & densify');
   ok('dedupe drops repeats', G.dedupe([[0, 0], [0, 0], [1, 1]]).length === 2);
 }
 
-/* ================================================================ */
 console.log('\nPlate shapes');
-/* ================================================================ */
 {
   for (const shape of SHAPES) {
     if (shape.id === 'custom') continue;
@@ -228,9 +196,6 @@ console.log('\nPlate shapes');
       `${inscribedRadiusOf(ring).toFixed(1)} mm`);
   }
 
-  // "Printed size" has to be the number that must fit on the bed, so every
-  // shape spans exactly 2 x radius on its longest axis — including after a
-  // rotation, which would otherwise make a square overhang by 41%.
   for (const shape of SHAPES) {
     if (shape.id === 'custom') continue;
     for (const rotation of [0, 30, 45]) {
@@ -246,9 +211,7 @@ console.log('\nPlate shapes');
   }
 }
 
-/* ================================================================ */
 console.log('\nFrame band');
-/* ================================================================ */
 {
   const plate = [[buildShapeRing({ shape: 'circle', radius: 50 })]];
   const band = G.bandAroundRings(plate, 4);
@@ -256,7 +219,6 @@ console.log('\nFrame band');
   const inner = G.difference(plate, rim);
   const plateArea = G.multiPolygonArea(plate);
   const innerArea = G.multiPolygonArea(inner);
-  // A 4 mm rim on a 50 mm circle leaves a 46 mm circle.
   ok('frame leaves the expected inner area',
     Math.abs(innerArea - Math.PI * 46 * 46) / (Math.PI * 46 * 46) < 0.02,
     `inner ${innerArea.toFixed(0)} vs ${(Math.PI * 46 * 46).toFixed(0)}`);
@@ -269,9 +231,7 @@ console.log('\nFrame band');
   ok('extruded frame has positive volume', mesh.volume() > 0);
 }
 
-/* ================================================================ */
 console.log('\nText outlines');
-/* ================================================================ */
 {
   const font = JSON.parse(
     readFileSync(join(HERE, '..', 'vendor', 'helvetiker_bold.typeface.json'), 'utf8')
@@ -298,9 +258,7 @@ console.log('\nText outlines');
     `${fitted.width.toFixed(1)} mm`);
 }
 
-/* ================================================================ */
 console.log('\nGrid split (terrain dicing)');
-/* ================================================================ */
 {
   const plate = [[square(30)]];
   const pieces = G.gridSplit(plate, 10);
@@ -357,20 +315,17 @@ console.log('\nRoofs');
     return true;
   };
 
-  // Gabled on a rectangle: two planar halves, a triangular cross-section.
   const house = [G.closeRing([[-4, -2], [4, -2], [4, 2], [-4, 2]])];
   let mesh = new MeshBuilder('roofs');
   let wallTop = addRoof(mesh, house, 0, 10, { shape: 'gabled', heightM: 3 }, { metreScale: 1 });
   near('gabled: walls stop below the ridge', wallTop, 7);
   ok('gabled: watertight', openEdges(mesh) === 0, `${openEdges(mesh)} open edges`);
   ok('gabled: no zero-area facets', noDegenerate(mesh));
-  // Triangular prism: ½ · width · rise · length = ½ · 4 · 3 · 8.
   near('gabled: volume is the triangular prism', mesh.volume(), 48, 0.05);
   const bb = mesh.bounds();
   near('gabled: ridge reaches full building height', bb.maxZ, 10);
   near('gabled: eaves sit on the wall top', bb.minZ, 7);
 
-  // The ridge follows the long axis even when the footprint is rotated.
   const a = Math.PI / 5;
   const rot = [house[0].map(([x, y]) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)])];
   mesh = new MeshBuilder('roofs');
@@ -379,8 +334,6 @@ console.log('\nRoofs');
   ok('gabled, rotated: watertight', openEdges(mesh) === 0, `${openEdges(mesh)} open edges`);
   near('gabled, rotated: volume unchanged', mesh.volume(), 48, 0.05);
 
-  // An L-shaped house: the ridge crosses a concave boundary, so one half
-  // comes back as two pieces. Every piece must still close.
   const ell = [G.closeRing([[0, 0], [10, 0], [10, 3], [4, 3], [4, 8], [0, 8]])];
   mesh = new MeshBuilder('roofs');
   ok('gabled on an L-shape: built',
@@ -390,33 +343,26 @@ console.log('\nRoofs');
   ok('gabled on an L-shape: positive volume', mesh.volume() > 0, `got ${mesh.volume()}`);
   ok('gabled on an L-shape: no zero-area facets', noDegenerate(mesh));
 
-  // Skillion: a single plane, high side away from roof:direction (south).
   mesh = new MeshBuilder('roofs');
   wallTop = addRoof(mesh, house, 0, 10,
     { shape: 'skillion', heightM: 2, directionDeg: 180 }, { metreScale: 1 });
   near('skillion: walls stop below the high edge', wallTop, 8);
   ok('skillion: watertight', openEdges(mesh) === 0, `${openEdges(mesh)} open edges`);
-  // Wedge: ½ · rise · area.
   near('skillion: volume is the wedge', mesh.volume(), 32, 0.05);
 
-  // Pyramidal: an apex fan over the footprint.
   const tower = [G.closeRing([[-3, -3], [3, -3], [3, 3], [-3, 3]])];
   mesh = new MeshBuilder('roofs');
   wallTop = addRoof(mesh, tower, 0, 12, { shape: 'pyramidal', heightM: 4 }, { metreScale: 1 });
   near('pyramidal: walls stop below the apex', wallTop, 8);
   ok('pyramidal: watertight', openEdges(mesh) === 0, `${openEdges(mesh)} open edges`);
-  // ⅓ · base area · rise.
   near('pyramidal: volume is the pyramid', mesh.volume(), 48, 0.05);
 
-  // A concave footprint downgrades pyramidal to gabled instead of hanging
-  // the apex over the void.
   mesh = new MeshBuilder('roofs');
   ok('pyramidal on an L-shape: still built',
     addRoof(mesh, ell, 0, 9, { shape: 'pyramidal' }, { metreScale: 1 }) !== null);
   ok('pyramidal on an L-shape: watertight', openEdges(mesh) === 0,
     `${openEdges(mesh)} open edges`);
 
-  // Refusals: courtyards, slivers, and roofs too small to print.
   const holed = [square(10), [...square(4)].reverse()];
   mesh = new MeshBuilder('roofs');
   ok('a courtyard building stays flat',
@@ -428,7 +374,6 @@ console.log('\nRoofs');
     addRoof(mesh, house, 0, 10, { shape: 'gabled', heightM: 0.05 }, { metreScale: 1 }) === null);
   ok('nothing was added by refusals', mesh.isEmpty());
 
-  // Which buildings get which roof — the tag side.
   const { roofSpec } = await import('../js/model/tags.js');
   ok('building=house defaults to gabled',
     roofSpec({ building: 'house' })?.shape === 'gabled');
@@ -454,7 +399,6 @@ console.log('\nRoofs');
       ?.directionDeg === null &&
     roofSpec({ building: 'house', 'roof:direction': 'S' }).directionDeg === 180);
 
-  // Clipped by the plate edge: half a house is still a closed solid.
   const clipped = G.intersection([house[0]].length ? [house] : [], [[G.closeRing([
     [-4, -2], [1.3, -2], [1.3, 2], [-4, 2],
   ])]]);

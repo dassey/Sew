@@ -1,11 +1,3 @@
-/**
- * The "Your own data" panel.
- *
- * Kept apart from app.js because it is a self-contained loop: take a file,
- * parse it, let the user say what the columns mean, and hand back OSM-shaped
- * features. The app only needs to know when something changed.
- */
-
 import { importFile, guessHeightMapping, guessNameField } from './data/import/index.js';
 import { IMPORT_TARGETS, defaultMapping, heightSummary } from './data/import/merge.js';
 import { saveDataset, loadDatasets, deleteDataset } from './data/import/store.js';
@@ -17,9 +9,6 @@ const UNITS = [
 ];
 
 export class ImportsPanel {
-  /**
-   * @param {object} handlers {onChange(datasets), onFocus(bbox), onMessage(text, tone)}
-   */
   constructor(handlers) {
     this.handlers = handlers;
     this.datasets = [];
@@ -43,10 +32,6 @@ export class ImportsPanel {
     this._wireDragAndDrop();
   }
 
-  /**
-   * Drag-and-drop is bound to the window, not the panel: people drop files on
-   * the map, which is the biggest target on screen and the obvious place.
-   */
   _wireDragAndDrop() {
     let depth = 0;
     const over = (on) => this.dropzone.classList.toggle('is-over', on);
@@ -92,8 +77,6 @@ export class ImportsPanel {
         const dataset = await importFile(file);
         const mapping = defaultMapping(dataset);
 
-        // Pre-fill the mapping from the attribute table, so the common case
-        // needs no configuration at all.
         if (mapping.part === 'buildings') {
           const guess = guessHeightMapping(dataset.fields);
           mapping.heightField = guess.field;
@@ -121,8 +104,6 @@ export class ImportsPanel {
 
     this.render();
     this.handlers.onChange?.(this.datasets);
-    // Nothing is more confusing than importing data and seeing no change
-    // because the plate is a thousand miles away.
     this.handlers.onFocus?.(this.datasets[this.datasets.length - 1].bbox);
   }
 
@@ -141,8 +122,6 @@ export class ImportsPanel {
     this.render();
     this.handlers.onChange?.(this.datasets);
   }
-
-  /* ---------------- rendering ---------------- */
 
   render() {
     this.list.innerHTML = '';
@@ -188,7 +167,6 @@ export class ImportsPanel {
     head.append(enabled, title, focus, drop);
     li.append(head);
 
-    /* --- where does it go, and does it replace what is there --- */
     const grid = document.createElement('div');
     grid.className = 'dataset-grid';
 
@@ -210,7 +188,6 @@ export class ImportsPanel {
     );
     li.append(grid);
 
-    /* --- height, for buildings --- */
     if (mapping.part === 'buildings') {
       const numeric = dataset.fields.filter((f) => f.type === 'number');
       const heightGrid = document.createElement('div');
@@ -241,8 +218,6 @@ export class ImportsPanel {
           `Heights <b>${summary.min.toFixed(1)}–${summary.max.toFixed(1)} m</b>, ` +
           `median <b>${summary.median.toFixed(1)} m</b>, ` +
           `<b>${summary.distinct}</b> distinct values.`;
-        // A column that resolves to one value everywhere is the wrong column,
-        // or the wrong unit, and the print will look exactly as flat as before.
         if (summary.distinct <= 2) {
           note.classList.add('is-warn');
           note.innerHTML += ' That is nearly flat — try another column.';
@@ -259,7 +234,6 @@ export class ImportsPanel {
       }
     }
 
-    /* --- width, for anything linear --- */
     if ((mapping.part === 'roads' || mapping.part === 'water') && dataset.kind === 'line') {
       const widthGrid = document.createElement('div');
       widthGrid.className = 'dataset-grid one';
@@ -273,8 +247,6 @@ export class ImportsPanel {
     return li;
   }
 }
-
-/* ---------------- small DOM helpers ---------------- */
 
 function el(tag, props) {
   return Object.assign(document.createElement(tag), props);

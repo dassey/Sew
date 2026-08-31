@@ -1,14 +1,3 @@
-/**
- * OpenStreetMap feature download via Overpass API.
- *
- * One query pulls every layer at once. `out geom` inlines member coordinates so
- * we never have to resolve node references ourselves — worth the slightly
- * larger payload for how much assembly code it deletes.
- *
- * Mirrors are tried in order; the public instances rate-limit aggressively and
- * a 429/504 from one is routine rather than exceptional.
- */
-
 const MIRRORS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
@@ -47,11 +36,6 @@ export const LAYER_QUERIES = {
   trees: ['node["natural"="tree"]', 'way["natural"="tree_row"]'],
 };
 
-/**
- * @param {object} bbox {minLat, minLon, maxLat, maxLon}
- * @param {string[]} layers keys of LAYER_QUERIES
- * @param {number} timeout seconds
- */
 export function buildQuery(bbox, layers, timeout = 90) {
   const b = `${bbox.minLat.toFixed(6)},${bbox.minLon.toFixed(6)},${bbox.maxLat.toFixed(6)},${bbox.maxLon.toFixed(6)}`;
   const parts = [];
@@ -91,16 +75,9 @@ function writeSessionCache(key, data) {
   try {
     sessionStorage.setItem(key, JSON.stringify({ at: Date.now(), data }));
   } catch {
-    // Quota exceeded on a big download — the in-memory cache still covers the
-    // common case of tweaking settings without moving the map.
   }
 }
 
-/**
- * Run a query, walking the mirror list on failure.
- * @param {string} query
- * @param {object} [opts] {signal, onProgress}
- */
 export async function runQuery(query, opts = {}) {
   const key = cacheKey(query);
   if (memoryCache.has(key)) return memoryCache.get(key);
@@ -151,13 +128,6 @@ export async function runQuery(query, opts = {}) {
   );
 }
 
-/**
- * Assemble raw Overpass elements into per-layer feature lists.
- *
- * Ways arrive with inline `geometry`; multipolygon relations arrive as a set of
- * member ways that have to be stitched into closed rings, because OSM splits
- * long coastlines and lake outlines across many ways.
- */
 export function parseElements(elements) {
   const out = {
     buildings: [],
@@ -227,13 +197,6 @@ function ringIsClosed(points) {
   return a.lat === b.lat && a.lon === b.lon;
 }
 
-/**
- * Stitch relation members into closed rings.
- *
- * Members share endpoints but arrive in arbitrary order and direction, so this
- * is a greedy chain walk: take an open end, keep attaching whatever member
- * touches it (flipping as needed) until the chain closes or runs out.
- */
 function assembleRelation(rel) {
   const byRole = { outer: [], inner: [] };
   for (const m of rel.members || []) {
@@ -276,12 +239,10 @@ function assembleRelation(rel) {
     }
   }
 
-  // Outer rings first so the polygon builder can treat rings[0] as the shell.
   rings.sort((a, b) => (a.role === 'outer' ? -1 : 1) - (b.role === 'outer' ? -1 : 1));
   return rings;
 }
 
-/** Rough byte size of the response, for the "downloaded N MB" readout. */
 export function estimateSize(json) {
   return JSON.stringify(json).length;
 }

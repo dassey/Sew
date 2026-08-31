@@ -15,7 +15,6 @@
 
 <div id="app" class="app">
 
-  <!-- ─────────────── header ─────────────── -->
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"></span>
@@ -41,15 +40,12 @@
     </div>
   </header>
 
-  <!-- ─────────────── sidebar ─────────────── -->
   <aside class="sidebar" id="sidebar">
 
-    <!-- Collapsed grab bar; only visible on narrow screens -->
     <button class="sheet-handle" id="sheet-handle" type="button" aria-expanded="false" aria-controls="sidebar">
       <span>Settings</span>
     </button>
 
-    <!-- Shape & size -->
     <section class="panel" data-panel="shape" open>
       <button class="panel-head" type="button" aria-expanded="true">
         <span class="panel-title">Shape &amp; size</span><span class="chev"></span>
@@ -88,7 +84,6 @@
       </div>
     </section>
 
-    <!-- Layers -->
     <section class="panel" data-panel="layers" open>
       <button class="panel-head" type="button" aria-expanded="true">
         <span class="panel-title">Layers &amp; colours</span><span class="chev"></span>
@@ -120,7 +115,6 @@
       </div>
     </section>
 
-    <!-- Your own data -->
     <section class="panel" data-panel="imports">
       <button class="panel-head" type="button" aria-expanded="false">
         <span class="panel-title">Your own data</span><span class="chev"></span>
@@ -151,7 +145,6 @@
       </div>
     </section>
 
-    <!-- Route -->
     <section class="panel" data-panel="route">
       <button class="panel-head" type="button" aria-expanded="false">
         <span class="panel-title">Highlighted route</span><span class="chev"></span>
@@ -187,7 +180,6 @@
       </div>
     </section>
 
-    <!-- Terrain -->
     <section class="panel" data-panel="terrain">
       <button class="panel-head" type="button" aria-expanded="false">
         <span class="panel-title">Terrain</span><span class="chev"></span>
@@ -212,7 +204,6 @@
       </div>
     </section>
 
-    <!-- Print settings -->
     <section class="panel" data-panel="print">
       <button class="panel-head" type="button" aria-expanded="false">
         <span class="panel-title">Print tuning</span><span class="chev"></span>
@@ -285,7 +276,6 @@
       </div>
     </section>
 
-    <!-- Nameplate -->
     <section class="panel" data-panel="nameplate">
       <button class="panel-head" type="button" aria-expanded="false">
         <span class="panel-title">Nameplate</span><span class="chev"></span>
@@ -323,7 +313,6 @@
       </div>
     </section>
 
-    <!-- Export -->
     <section class="panel" data-panel="export" open>
       <button class="panel-head" type="button" aria-expanded="true">
         <span class="panel-title">Export</span><span class="chev"></span>
@@ -346,7 +335,6 @@
     </footer>
   </aside>
 
-  <!-- ─────────────── stage ─────────────── -->
   <main class="stage">
     <div class="stage-tabs" role="tablist">
       <button class="stage-tab is-active" data-view="split" role="tab">Split</button>
@@ -383,7 +371,6 @@
     <div class="progress" id="progress" hidden><div class="progress-bar" id="progress-bar"></div></div>
   </main>
 
-  <!-- ─────────────── overlays ─────────────── -->
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <dialog class="guide" id="guide">

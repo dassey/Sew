@@ -1,13 +1,3 @@
-/**
- * 3D preview.
- *
- * Deliberately Z-up: the model is authored in printer coordinates and shown in
- * printer coordinates, so what you orbit is exactly what lands on the bed. The
- * scene is styled like a photograph of a printed model rather than like a map —
- * soft key light, a contact shadow, muted background — because the thing being
- * judged here is the print, not the cartography.
- */
-
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 
@@ -26,7 +16,7 @@ export class Viewer {
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
-      preserveDrawingBuffer: true, // needed for the PNG snapshot
+      preserveDrawingBuffer: true,
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
@@ -37,7 +27,7 @@ export class Viewer {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
-    this.controls.maxPolarAngle = Math.PI * 0.495; // never go below the bed
+    this.controls.maxPolarAngle = Math.PI * 0.495;
     this.controls.minDistance = 20;
     this.controls.maxDistance = 2500;
 
@@ -76,7 +66,7 @@ export class Viewer {
 
   _setupStage() {
     const grid = new THREE.GridHelper(600, 30, 0x2c3138, 0x22262c);
-    grid.rotation.x = Math.PI / 2; // GridHelper is XZ by default; we are Z-up
+    grid.rotation.x = Math.PI / 2;
     grid.position.z = -0.02;
     this.grid = grid;
     this.scene.add(grid);
@@ -100,9 +90,6 @@ export class Viewer {
     this.renderer.setSize(w, h, false);
     this._lastAspect = aspect;
 
-    // A big aspect change means the pane was switched or the phone was turned.
-    // Re-fitting only on a big change leaves the user's own zoom alone during
-    // ordinary window resizing.
     if (changed && this.parts.size) this.frameModel();
   }
 
@@ -113,7 +100,6 @@ export class Viewer {
     this.renderer.render(this.scene, this.camera);
   }
 
-  /** Drop all part meshes and release their GPU buffers. */
   clear() {
     for (const [, mesh] of this.parts) {
       this.modelGroup.remove(mesh);
@@ -123,10 +109,6 @@ export class Viewer {
     this.parts.clear();
   }
 
-  /**
-   * @param {Array} parts  {id, color, positions, indices}
-   * @param {object} [opts] {frameCamera: boolean}
-   */
   setModel(parts, opts = {}) {
     this.clear();
 
@@ -185,7 +167,6 @@ export class Viewer {
     return any ? box : null;
   }
 
-  /** Size the shadow frustum to the model so shadows stay crisp at any scale. */
   _fitLights() {
     const box = this._boundingBox();
     if (!box) return;
@@ -210,20 +191,14 @@ export class Viewer {
     this.grid.position.set(centre.x, centre.y, -0.02);
   }
 
-  /** Pull the camera back so the whole plate fits, keeping the current angle. */
   frameModel(padding) {
     const box = this._boundingBox();
     if (!box) return;
-    // A tall narrow viewport is limited by its width, so the usual margin
-    // leaves the model marooned in the middle of a lot of empty sky.
     if (padding === undefined) padding = this.camera.aspect < 0.9 ? 1.06 : 1.25;
     const size = box.getSize(new THREE.Vector3());
     const centre = box.getCenter(new THREE.Vector3());
     const radius = Math.max(size.length() / 2, 10);
 
-    // Fit to whichever axis is tighter. On a phone held upright the horizontal
-    // field of view is far narrower than the vertical one, and fitting to the
-    // vertical alone puts half the plate off the side of the screen.
     const vFov = (this.camera.fov * Math.PI) / 180;
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * this.camera.aspect);
     const distance = (radius / Math.sin(Math.min(vFov, hFov) / 2)) * padding;
@@ -244,7 +219,6 @@ export class Viewer {
     this.controls.update();
   }
 
-  /** Preset viewpoints — 'top' is the one people screenshot. */
   setView(name) {
     const box = this._boundingBox();
     const centre = box ? box.getCenter(new THREE.Vector3()) : new THREE.Vector3();
@@ -264,7 +238,6 @@ export class Viewer {
     this.frameModel();
   }
 
-  /** Render one frame at higher resolution and hand back a PNG blob. */
   async snapshot(scale = 2) {
     const { clientWidth: w, clientHeight: h } = this.container;
     this.renderer.setSize(w * scale, h * scale, false);

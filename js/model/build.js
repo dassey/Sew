@@ -1,20 +1,3 @@
-/**
- * Turn OSM features into printable geometry.
- *
- * The central idea is a **disjoint partition of the plate**. Rather than
- * stacking layers on top of one another and hoping the slicer sorts it out,
- * every square millimetre of the plate is awarded to exactly one part, in
- * priority order: route, then buildings, then rail, roads, water, parks, and
- * finally plain ground for whatever is left.
- *
- * That buys three things at once:
- *   - colour boundaries are crisp, because no two parts share a footprint;
- *   - each part is an independent watertight prism, so a single-material print
- *     and a five-filament print come off the same geometry;
- *   - water can sit *below* the ground surface instead of floating on it,
- *     because its neighbours' side walls close the gap.
- */
-
 import { createProjection } from '../core/projection.js';
 import * as G from '../core/geom.js';
 import {
@@ -31,10 +14,6 @@ import { layoutText } from './text.js';
 import { PARTS } from './parts.js';
 import * as T from './tags.js';
 
-/* ------------------------------------------------------------------ *
- * Feature conversion
- * ------------------------------------------------------------------ */
-
 function featureToMultiPolygon(feature, toMm) {
   const outers = [];
   const inners = [];
@@ -50,7 +29,6 @@ function featureToMultiPolygon(feature, toMm) {
 
   const polys = outers.map((o) => [o]);
   for (const hole of inners) {
-    // Holes arrive unassociated; place each in whichever shell contains it.
     const owner = polys.find((p) => G.pointInRing(hole[0], p[0])) || polys[0];
     owner.push(hole);
   }
@@ -81,15 +59,6 @@ function bboxOverlaps(a, b) {
   return !(a.maxX < b.minX || a.minX > b.maxX || a.maxY < b.minY || a.minY > b.maxY);
 }
 
-/**
- * Is this bounding box certainly within `radius` of the origin?
- *
- * Used as an exact fast path for building clipping: a footprint inside the
- * plate's inscribed circle cannot possibly cross the plate edge, so it can skip
- * a boolean intersection entirely. Bounding-box containment against the plate's
- * *bounding* box would not be sound — a box can sit inside the square around a
- * circle while its polygon pokes out past the arc.
- */
 function bboxWithinRadius(box, radius) {
   if (radius <= 0) return false;
   const x = Math.max(Math.abs(box.minX), Math.abs(box.maxX));
@@ -97,7 +66,6 @@ function bboxWithinRadius(box, radius) {
   return x * x + y * y <= radius * radius;
 }
 
-/** Width of the plate at a given y, measured across the outline. */
 function horizontalSpanAt(ring, y) {
   let min = Infinity;
   let max = -Infinity;
@@ -113,26 +81,12 @@ function horizontalSpanAt(ring, y) {
   return isFinite(min) ? max - min : 0;
 }
 
-/**
- * Remove building outlines that sit entirely inside a taller one.
- *
- * OSM routinely carries the same structure twice — a way plus a relation, a
- * courtyard block plus its individual units, a mall plus its anchor stores.
- * Extruding both buries one prism inside the other: wasted triangles, internal
- * walls the slicer has to reconcile, and geometry that shares no vertex with
- * anything around it.
- *
- * Mutates `shapes` in place and returns how many were removed. Bounding-box
- * containment is a cheap prefilter, so the expensive boolean only runs on the
- * handful of pairs that could possibly nest.
- */
 function dropNestedBuildings(shapes) {
   if (shapes.length < 2) return 0;
 
   const areaOf = (b) => (b.box.maxX - b.box.minX) * (b.box.maxY - b.box.minY);
   const order = shapes.map((_, i) => i).sort((a, b) => areaOf(shapes[b]) - areaOf(shapes[a]));
 
-  // Grid hash over the plate so each candidate only meets nearby neighbours.
   const CELL = 8;
   const buckets = new Map();
   const cellsOf = (box) => {
@@ -195,15 +149,6 @@ function centroidOf(ring) {
   return [x / n, y / n];
 }
 
-/* ------------------------------------------------------------------ *
- * Build
- * ------------------------------------------------------------------ */
-
-/**
- * @param {object} features  output of overpass.parseElements()
- * @param {object} s         settings (see parts.js DEFAULT_SETTINGS)
- * @param {object} [ctx]     {heightGrid, routePoints, font, onProgress}
- */
 export function buildModel(features, s, ctx = {}) {
   const report = (fraction, message) => ctx.onProgress?.(fraction, message);
   const warnings = [];
@@ -219,8 +164,6 @@ export function buildModel(features, s, ctx = {}) {
 
   const simplifyTol = Math.max(0.01, s.print.simplifyMm);
   const minArea = Math.max(0.01, s.print.minFeatureMm2);
-
-  /* ---- plate outline, nameplate bar and frame ---- */
 
   report(0.02, 'Laying out the plate…');
 
@@ -244,11 +187,6 @@ export function buildModel(features, s, ctx = {}) {
   if (nameplateOn) {
     const halfW = ((shapeBox.maxX - shapeBox.minX) / 2) * 0.86;
 
-    // Push the bar's top edge up until the plate is genuinely wide enough there
-    // to carry it. A star or a heart tapers to a point at the bottom, and a bar
-    // hung off that point either prints as a second loose object or snaps off
-    // the first time the model is picked up. The overlap is invisible: the
-    // visible plaque is the bar minus the plate outline.
     const plateHeight = shapeBox.maxY - shapeBox.minY;
     const wantContact = halfW * 0.6;
     const maxRaise = plateHeight * 0.35;
@@ -290,11 +228,8 @@ export function buildModel(features, s, ctx = {}) {
     }
   }
 
-  // The city only ever occupies the map area, never the nameplate bar.
   const cityArea = G.snapMultiPolygon(barMp.length ? G.intersection(innerMp, shapeMp) : innerMp);
   const plaqueArea = barMp.length ? G.snapMultiPolygon(G.difference(innerMp, shapeMp)) : [];
-
-  /* ---- terrain ---- */
 
   const terrain =
     s.terrain.enabled && ctx.heightGrid
@@ -308,11 +243,7 @@ export function buildModel(features, s, ctx = {}) {
       : null;
   const groundZ = terrain || (() => 0);
   const baseTop = (x, y) => groundZ(x, y) + s.heights.base;
-  // Dice terrain-draped surfaces at roughly one cell per elevation sample.
-  // Finer than the data buys nothing but triangles.
   const gridCell = Math.max(3, s.size.printMm / Math.max(8, s.terrain.resolution));
-
-  /* ---- collect each layer's footprint ---- */
 
   const plateBox = bboxOfRing(plateMp[0][0]);
   const inPlate = (box) => bboxOverlaps(box, plateBox);
@@ -338,8 +269,6 @@ export function buildModel(features, s, ctx = {}) {
     }
   }
 
-  // A handful of nested outlines is normal in OSM and not worth mentioning;
-  // a lot of them usually means the area is mapped with building parts.
   const duplicates = dropNestedBuildings(buildingShapes);
   if (duplicates >= 25) {
     warnings.push(
@@ -406,7 +335,6 @@ export function buildModel(features, s, ctx = {}) {
       waterMp = G.union(waterMp, buffered);
     }
 
-    // Ocean: the one water body OSM stores as an open line, not a polygon.
     if (features.coastline.length) {
       const chains = [];
       for (const f of features.coastline) {
@@ -435,8 +363,6 @@ export function buildModel(features, s, ctx = {}) {
     greenMp = G.normalize(areas);
   }
 
-  /* ---- route ---- */
-
   report(0.26, 'Placing the route…');
 
   let routeMp = [];
@@ -452,8 +378,6 @@ export function buildModel(features, s, ctx = {}) {
       if (ring) routeMp = G.intersection(G.normalize([[ring]]), cityArea);
     }
   }
-
-  /* ---- buffer the linear layers into areas ---- */
 
   report(0.34, 'Widening streets to printable size…');
 
@@ -487,8 +411,6 @@ export function buildModel(features, s, ctx = {}) {
         Math.max((l.width * mmPerMetre) / 2, minHalf)
       )
     : [];
-
-  /* ---- nameplate lettering ---- */
 
   let textMp = [];
   if (nameplateOn && ctx.font) {
@@ -532,18 +454,8 @@ export function buildModel(features, s, ctx = {}) {
     }
   }
 
-  /* ---- carve the plate into disjoint regions ---- */
-
   report(0.46, 'Resolving overlaps between layers…');
 
-  // Douglas-Peucker treats each ring independently, so simplifying a dense
-  // road union can pull a ring across itself. Re-normalising afterwards repairs
-  // that before the boolean chain — and before earcut, which would otherwise
-  // triangulate the crossing into a spike.
-  //
-  // Snapping to the micron grid at the same time keeps the areas reported in
-  // the stats identical to the areas that actually get extruded, and means the
-  // rounding an export format applies is lossless.
   const tidy = (mp) =>
     mp.length
       ? G.dropTinyPolygons(
@@ -559,8 +471,6 @@ export function buildModel(features, s, ctx = {}) {
   waterMp = tidy(waterMp);
   greenMp = tidy(greenMp);
 
-  // Everything claimed so far. Each layer is cut against this, then added to
-  // it, so later layers can only ever take what is still free.
   let claimed = textMp.length ? textMp.slice() : [];
 
   const claim = (mp, clipTo = cityArea) => {
@@ -569,24 +479,17 @@ export function buildModel(features, s, ctx = {}) {
     if (!bounded.length) return [];
     const region = claimed.length ? G.difference(bounded, claimed) : bounded;
     const kept = G.dropTinyPolygons(region, minArea);
-    // Claim only what is actually emitted. Marking the dropped slivers as taken
-    // would punch unfillable holes in the plate, and a sliver that happens to
-    // ring a small patch of ground would strand it as a separate loose object.
     if (kept.length) claimed = claimed.length ? G.union(claimed, kept) : G.normalize(kept);
     return kept;
   };
 
   const routeRegion = claim(routeMp);
 
-  // Buildings stay individual so each keeps its own height, but their combined
-  // outline is what the layers below get cut against.
   report(0.54, 'Fitting buildings…');
   const buildingsPlaced = [];
   let builtUpArea = 0;
   if (buildingShapes.length) {
     const routeBox = routeRegion.length ? G.boundsOf(routeRegion) : null;
-    // Anything inside this circle is provably clear of the plate edge and the
-    // frame, which skips a boolean op for the great majority of footprints.
     const safeRadius = G.pointInRing([0, 0], shapeRing)
       ? inscribedRadiusOf(shapeRing) - (frameOn ? s.print.frameWidthMm : 0)
       : 0;
@@ -624,9 +527,6 @@ export function buildModel(features, s, ctx = {}) {
   const roadsRegion = claim(roadsMp);
   const waterRegion = claim(waterMp);
   const greenRegion = claim(greenMp);
-  // Ground is the filler, so it keeps its slivers. Dropping them would punch
-  // holes nothing else fills, and a hole that happens to ring a small patch
-  // strands it as a separate object.
   const groundRegion = claimed.length ? G.difference(cityArea, claimed) : cityArea;
 
   const plaqueRegion = plaqueArea.length
@@ -634,8 +534,6 @@ export function buildModel(features, s, ctx = {}) {
       ? G.difference(plaqueArea, textMp)
       : plaqueArea
     : [];
-
-  /* ---- extrude ---- */
 
   report(0.72, 'Extruding geometry…');
 
@@ -648,19 +546,15 @@ export function buildModel(features, s, ctx = {}) {
   const dice = (mp) =>
     terrain ? G.gridSplit(G.densifyMultiPolygon(mp, gridCell), gridCell) : mp;
 
-  // Ground
   if (groundRegion.length) {
     extrudeMultiPolygon(meshFor('ground'), dice(groundRegion), 0, baseTop);
   }
 
-  // Parks
   if (greenRegion.length) {
     const top = (x, y) => baseTop(x, y) + s.heights.green;
     extrudeMultiPolygon(meshFor('green'), dice(greenRegion), 0, top);
   }
 
-  // Water: recessed, and flat per body — a lake that follows the hillside
-  // reads as a mistake even when the elevation data says so.
   if (waterRegion.length) {
     const depth = Math.min(s.heights.waterDepth, s.heights.base - 0.6);
     const mesh = meshFor('water');
@@ -671,7 +565,6 @@ export function buildModel(features, s, ctx = {}) {
     }
   }
 
-  // Streets and rail follow the ground, so their rings need dense vertices.
   const linearTop = (offset) => (x, y) => baseTop(x, y) + offset;
   const drape = (mp) => (terrain ? G.densifyMultiPolygon(mp, gridCell) : mp);
 
@@ -693,10 +586,6 @@ export function buildModel(features, s, ctx = {}) {
     extrudeMultiPolygon(meshFor('route'), drape(routeRegion), 0, linearTop(s.heights.route));
   }
 
-  // Buildings — and their roofs, which are separate solids sitting
-  // face-to-face on the wall prisms so they can carry their own colour.
-  // The roof takes the top of the tagged height rather than adding to it,
-  // so the skyline is exactly as tall either way.
   report(0.82, 'Extruding buildings…');
   if (buildingsPlaced.length) {
     const mesh = meshFor('buildings');
@@ -718,8 +607,6 @@ export function buildModel(features, s, ctx = {}) {
     }
   }
 
-  // Frame and nameplate bar. Both stay dead level even over terrain — a rim
-  // that follows the hillside reads as a warped print, not as topography.
   if (rimMp.length) {
     extrudeMultiPolygon(meshFor('frame'), rimMp, 0, s.heights.base + s.heights.frame);
   }
@@ -728,12 +615,10 @@ export function buildModel(features, s, ctx = {}) {
     extrudeMultiPolygon(mesh, plaqueRegion, 0, s.heights.base);
   }
   if (textMp.length) {
-    // Lettering sits on the plaque, or on the plate if there is no bar.
     const mesh = meshFor('label');
     extrudeMultiPolygon(mesh, textMp, 0, s.heights.base + s.heights.label);
   }
 
-  // Trees
   if (s.layers.trees) {
     report(0.9, 'Planting trees…');
     const mesh = meshFor('trees');
@@ -779,8 +664,6 @@ export function buildModel(features, s, ctx = {}) {
       warnings.push('OpenStreetMap has no individual trees mapped here.');
     }
   }
-
-  /* ---- package ---- */
 
   report(0.96, 'Packaging…');
 
@@ -842,14 +725,8 @@ export function buildModel(features, s, ctx = {}) {
       depthMm: bounds.maxY - bounds.minY,
       heightMm: bounds.maxZ - bounds.minZ,
       buildingCount: buildingsPlaced.length,
-      // Areas the partition actually claimed, as opposed to the sum of
-      // individual footprints — buildings routinely overlap one another in OSM.
       plateAreaMm2: G.multiPolygonArea(plateMp),
       builtUpMm2: builtUpArea,
-      // Per-region areas straight from the boolean results. These describe the
-      // partition itself; measuring the triangle soup instead would also count
-      // the redundant coplanar triangles earcut sometimes emits inside a
-      // self-touching ring, which change nothing about the printed solid.
       regionAreas: {
         route: G.multiPolygonArea(routeRegion),
         buildings: builtUpArea,

@@ -1,19 +1,3 @@
-/**
- * Browser test.
- *
- * The Node suites cover the geometry; this covers everything that only exists
- * in a browser — the ES module graph, the worker, WebGL, Leaflet, and the
- * control wiring — by driving the real page.
- *
- * The network is stubbed from `test/.cache` fixtures rather than hit live.
- * That is not a compromise: it makes the run deterministic and fast, it keeps
- * the free public APIs out of a loop that runs on every change, and the live
- * contracts are already exercised by `smoke.mjs`. Populate the cache by
- * running that suite first.
- *
- *   node test/browser.mjs [--headed] [--keep]
- */
-
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFile, mkdir, readdir } from 'node:fs/promises';
@@ -26,7 +10,6 @@ const SHOTS = join(HERE, 'shots');
 const CACHE = join(HERE, '.cache');
 const PORT = 8137;
 
-// Manhattan Midtown — the fixture the Overpass stub replays.
 const FIXTURE = { lat: 40.7549, lon: -73.984, areaMetres: 1200, name: 'Midtown Manhattan' };
 
 const TYPES = {
@@ -76,7 +59,6 @@ function serve() {
   return new Promise((resolve) => server.listen(PORT, () => resolve(server)));
 }
 
-/** Google encoded polyline, precision 6 — the format Valhalla returns. */
 function encodePolyline(points, precision = 6) {
   const factor = 10 ** precision;
   let last = [0, 0];
@@ -141,11 +123,11 @@ async function installStubs(page, osm) {
         body: JSON.stringify([
           {
             lat: String(FIXTURE.lat), lon: String(FIXTURE.lon), type: 'house',
-            display_name: '6624, North Broadway Avenue, Gladstone, Missouri',
+            display_name: '742, Evergreen Terrace, Springfield, Oregon',
             boundingbox: ['40.7548', '40.7550', '-73.9841', '-73.9839'],
             address: {
-              house_number: '6624', road: 'North Broadway Avenue',
-              city: 'Gladstone', state: 'Missouri', country: 'United States',
+              house_number: '742', road: 'Evergreen Terrace',
+              city: 'Springfield', state: 'Oregon', country: 'United States',
             },
           },
         ]),
@@ -165,9 +147,6 @@ async function installStubs(page, osm) {
     const url = new URL(route.request().url());
     const lats = url.searchParams.get('latitude').split(',').map(Number);
     const lons = url.searchParams.get('longitude').split(',').map(Number);
-    // A synthetic hill about 500 m across, so the terrain path has real relief
-    // to work with. Offsets are converted to metres or the ridge comes out flat
-    // at city scale.
     const mPerDegLat = 111320;
     const mPerDegLon = 111320 * Math.cos((FIXTURE.lat * Math.PI) / 180);
     const elevation = lats.map((lat, i) => {
@@ -199,7 +178,6 @@ async function installStubs(page, osm) {
     });
   });
 
-  // Map tiles: a transparent pixel is enough to prove Leaflet is wired up.
   await page.route(/basemaps\.cartocdn\.com|tile\.openstreetmap\.org/, (route) =>
     route.fulfill({ contentType: 'image/png', body: PIXEL })
   );
@@ -247,7 +225,6 @@ async function installStubs(page, osm) {
   try {
     await page.goto(`http://localhost:${PORT}/index.html`, { waitUntil: 'load' });
 
-    /* ---------- boot ---------- */
     console.log('Boot');
     await page.waitForFunction(() => window.skylineForge !== undefined, { timeout: 20000 });
     ok('app boots', true);
@@ -260,7 +237,6 @@ async function installStubs(page, osm) {
     ok('all twelve layers are listed', (await page.locator('.layer-row').count()) === 12);
     ok('all four export formats are offered', (await page.locator('.format-opt').count()) === 4);
 
-    /* ---------- first model ---------- */
     console.log('\nFirst build (worker + Overpass)');
     await page.evaluate((f) => {
       const app = window.skylineForge;
@@ -297,7 +273,6 @@ async function installStubs(page, osm) {
       await page.evaluate(() => window.skylineForge.viewer.parts.size > 3));
     await page.screenshot({ path: join(SHOTS, '01-manhattan.png') });
 
-    /* ---------- search ---------- */
     console.log('\nSearch');
     await page.fill('#search-input', 'Midtown');
     await page.waitForSelector('#search-results li:not(.r-empty)');
@@ -308,18 +283,14 @@ async function installStubs(page, osm) {
     ok('picking a suggestion fills the nameplate title',
       (await page.evaluate(() => window.skylineForge.settings.nameplate.title)).length > 0);
 
-    // A house number has to go to Nominatim: Photon does not index them, and
-    // answers this exact query with the local post office.
     console.log('\nStreet address');
     await page.evaluate(() => { window.skylineForge.settings.nameplate.title = ''; });
     const searchesBefore = seen.nominatimSearch;
-    await page.fill('#search-input', '6624 N Broadway, Gladstone, MO');
-    // The suggestion list keeps its previous items in the DOM while hidden, so
-    // wait for the new results rather than for "some results".
+    await page.fill('#search-input', '742 Evergreen Terrace, Springfield, OR');
     await page.waitForFunction(
       () => {
         const el = document.querySelector('#search-results li .r-main');
-        return el && el.textContent.startsWith('6624');
+        return el && el.textContent.startsWith('742');
       },
       { timeout: 20000 }
     ).catch(() => {});
@@ -328,7 +299,7 @@ async function installStubs(page, osm) {
       `${seen.nominatimSearch - searchesBefore} lookups`);
     const firstResult = await page.locator('#search-results li .r-main').first().textContent();
     ok('the house number itself is offered, not a nearby landmark',
-      firstResult.startsWith('6624'), `got "${firstResult}"`);
+      firstResult.startsWith('742'), `got "${firstResult}"`);
     await page.locator('#search-results li').first().click();
     await page.waitForTimeout(400);
     const addressPick = await page.evaluate(() => ({
@@ -338,9 +309,8 @@ async function installStubs(page, osm) {
     ok('a house frames a neighbourhood, not the building',
       addressPick.area >= 300 && addressPick.area <= 1200, `${addressPick.area} m`);
     ok('the nameplate uses the town, not the street number',
-      addressPick.title === 'GLADSTONE', `got "${addressPick.title}"`);
+      addressPick.title === 'SPRINGFIELD', `got "${addressPick.title}"`);
 
-    /* ---------- shapes ---------- */
     console.log('\nShapes');
     for (const shape of ['hexagon', 'heart', 'star', 'rectangle', 'triangle']) {
       await page.click(`.shape-btn[data-shape="${shape}"]`);
@@ -350,8 +320,6 @@ async function installStubs(page, osm) {
         w: window.skylineForge.model.stats.widthMm,
         d: window.skylineForge.model.stats.depthMm,
       }));
-      // Whatever the outline, the printed footprint must stay inside the
-      // requested size (plus the nameplate bar, which extends downwards).
       ok(`${shape} stays within the printed size`,
         size.w <= 161 && size.d <= 161 + 20,
         `${size.w.toFixed(1)} × ${size.d.toFixed(1)} mm`);
@@ -360,7 +328,6 @@ async function installStubs(page, osm) {
     await page.click('.shape-btn[data-shape="circle"]');
     await page.waitForTimeout(650);
 
-    /* ---------- live geometry updates ---------- */
     console.log('\nLive updates');
     const overpassBefore = seen.overpass;
     const buildingVolume = () =>
@@ -375,16 +342,12 @@ async function installStubs(page, osm) {
     await page.waitForTimeout(700);
     await page.waitForFunction(() => !window.skylineForge.busy);
     const after = await buildingVolume();
-    // Volume rather than peak height: Midtown's tallest towers already sit at
-    // the height cap, so the tallest point barely moves while everything below
-    // it grows.
     ok('raising the height scale makes the skyline taller', after > before * 1.8,
       `${(before / 1000).toFixed(1)} cm³ -> ${(after / 1000).toFixed(1)} cm³`);
     ok('a geometry change reuses the cached map data',
       seen.overpass === overpassBefore,
       `${seen.overpass - overpassBefore} extra downloads`);
 
-    /* ---------- colours ---------- */
     console.log('\nColours');
     await page.click('[data-palette="blueprint"]');
     const painted = await page.evaluate(() => {
@@ -394,7 +357,6 @@ async function installStubs(page, osm) {
     ok('a palette repaints without rebuilding', painted === '#12395c', `ground is ${painted}`);
     await page.click('[data-palette="classic"]');
 
-    /* ---------- layer toggles ---------- */
     console.log('\nLayer toggles');
     await page.evaluate(() => {
       const row = [...document.querySelectorAll('.layer-row')]
@@ -413,7 +375,6 @@ async function installStubs(page, osm) {
         .some((p) => p.id === 'water');
     }));
 
-    /* ---------- terrain ---------- */
     console.log('\nTerrain');
     await page.evaluate(() => {
       const app = window.skylineForge;
@@ -438,7 +399,6 @@ async function installStubs(page, osm) {
     await page.waitForTimeout(700);
     await page.waitForFunction(() => !window.skylineForge.busy);
 
-    /* ---------- route ---------- */
     console.log('\nRoute');
     await page.evaluate((f) => {
       const app = window.skylineForge;
@@ -452,8 +412,6 @@ async function installStubs(page, osm) {
       app.renderWaypoints();
       return app.resolveRoute();
     }, FIXTURE);
-    // resolveRoute schedules the rebuild on a debounce, so wait for it to be
-    // picked up before asking whether the model contains a route.
     await page.waitForFunction(
       () => window.skylineForge.settings.route.points?.length > 2,
       { timeout: 60000 }
@@ -475,7 +433,6 @@ async function installStubs(page, osm) {
       (await page.locator('#waypoint-list li').count()) === 2);
     await page.screenshot({ path: join(SHOTS, '04-route.png') });
 
-    /* ---------- nameplate ---------- */
     console.log('\nNameplate');
     await page.evaluate(() => {
       const app = window.skylineForge;
@@ -494,7 +451,6 @@ async function installStubs(page, osm) {
     await page.waitForTimeout(500);
     await page.screenshot({ path: join(SHOTS, '05-nameplate.png') });
 
-    /* ---------- exports ---------- */
     console.log('\nExports');
     for (const format of ['3mf', 'stl', 'stl-parts', 'obj']) {
       const result = await page.evaluate(
@@ -519,7 +475,6 @@ async function installStubs(page, osm) {
     ok('the Download button produces a file',
       download.suggestedFilename().endsWith('.3mf'), download.suggestedFilename());
 
-    /* ---------- share link ---------- */
     console.log('\nShare link');
     const restored = await page.evaluate(() => {
       const app = window.skylineForge;
@@ -534,17 +489,14 @@ async function installStubs(page, osm) {
       restored.title === 'NEW YORK' && Math.abs(restored.lat - FIXTURE.lat) < 1e-6,
       `${restored.length} characters`);
 
-    /* ---------- persistence ---------- */
     console.log('\nReload');
     await page.reload({ waitUntil: 'load' });
     await page.waitForFunction(() => window.skylineForge !== undefined, { timeout: 20000 });
     const persisted = await page.evaluate(() => window.skylineForge.settings.nameplate.title);
     ok('settings survive a reload', persisted === 'NEW YORK', `got "${persisted}"`);
 
-    /* ---------- bring your own data ---------- */
     console.log('\nImporting your own data');
 
-    // A GeoJSON block with per-feature heights, handed straight to the panel.
     const importResult = await page.evaluate(async (f) => {
       const app = window.skylineForge;
       const features = [];
@@ -603,8 +555,6 @@ async function installStubs(page, osm) {
       imported.distinctHeights > 8, `${imported.distinctHeights} distinct heights`);
     await page.screenshot({ path: join(SHOTS, '07-imported.png') });
 
-    // Replace mode has to displace the OSM footprints underneath, so this runs
-    // while there are still OSM buildings there to displace.
     const modes = await page.evaluate(async () => {
       const app = window.skylineForge;
       const id = app.importsPanel.datasets[0].id;
@@ -620,10 +570,6 @@ async function installStubs(page, osm) {
     ok('replace drops the OSM buildings underneath',
       modes.replace < modes.add, `add ${modes.add}, replace ${modes.replace}`);
 
-    // The motivating case: somewhere OSM knows nothing about, where the upload
-    // is the only source of buildings. It also isolates the unit switch, which
-    // Manhattan's towers would otherwise mask by pinning the model height at
-    // the cap.
     await page.route('**://*/api/interpreter', (route) =>
       route.fulfill({ contentType: 'application/json', body: JSON.stringify({ elements: [] }) })
     );
@@ -631,7 +577,7 @@ async function installStubs(page, osm) {
       const app = window.skylineForge;
       app.cache = { bbox: null, layers: [], detail: null, features: null };
       app.merged = null;
-      app.settings.size.areaMetres = 1150; // new bbox, so the query cache misses
+      app.settings.size.areaMetres = 1150;
       app.syncUi();
     });
     await page.click('#generate-btn');
@@ -654,7 +600,6 @@ async function installStubs(page, osm) {
     ok('reading the column as metres instead of feet makes the buildings taller',
       afterUnit > bare.height * 2, `${bare.height.toFixed(1)} -> ${afterUnit.toFixed(1)} mm`);
 
-    // KML, which is what Google Earth produces.
     const kmlResult = await page.evaluate(async (f) => {
       const app = window.skylineForge;
       const ring = [
@@ -676,7 +621,6 @@ async function installStubs(page, osm) {
     ok('KML polygons are read', kmlResult.count === 1 && kmlResult.kind === 'area');
     ok('KML placemark names survive', kmlResult.name === 'Park', String(kmlResult.name));
 
-    // Projected data with no projection must be refused, not silently misplaced.
     const refusal = await page.evaluate(async () => {
       const app = window.skylineForge;
       const json = JSON.stringify({
@@ -704,7 +648,6 @@ async function installStubs(page, osm) {
     await page.waitForFunction(() => !window.skylineForge.busy, { timeout: 120000 });
     ok('removing a dataset clears it', (await page.locator('.dataset').count()) === 0);
 
-    /* ---------- mobile ---------- */
     console.log('\nMobile layout');
     const phone = await browser.newPage({
       viewport: { width: 390, height: 844 },
@@ -734,14 +677,9 @@ async function installStubs(page, osm) {
     ok('the map gets most of the screen',
       (await phone.locator('#map').boundingBox()).height > 500);
 
-    // Clear any toast first: they sit just above the sheet and can intercept
-    // the tap, which makes this check flaky rather than wrong.
     await phone.evaluate(() => { document.getElementById('toasts').innerHTML = ''; });
     await phone.click('#sheet-handle');
     await phone.waitForSelector('#sidebar.is-open', { timeout: 5000 });
-    // Wait for the slide to finish rather than for a fixed delay: max-height
-    // animates on the main thread, and under software WebGL the render loop
-    // starves it to a few frames a second.
     await phone
       .waitForFunction(
         () => document.getElementById('sidebar').getBoundingClientRect().height > 400,
@@ -753,13 +691,11 @@ async function installStubs(page, osm) {
       `${expanded.height.toFixed(0)} px tall`);
     await phone.screenshot({ path: join(SHOTS, '07-phone-settings.png') });
 
-    // The nameplate has to be removable from the layer list, which is the
-    // first place anyone will look for it.
     const nameplateRow = phone.locator('.layer-row', { hasText: 'Nameplate' });
     ok('the layer list has a Nameplate checkbox', (await nameplateRow.count()) === 1);
     await phone.evaluate(() => {
       const app = window.skylineForge;
-      app.settings.nameplate.title = 'GLADSTONE';
+      app.settings.nameplate.title = 'SPRINGFIELD';
       app.syncUi();
       app.onChange('geometry');
     });
@@ -789,7 +725,6 @@ async function installStubs(page, osm) {
       phoneErrors.slice(0, 2).join(' | '));
     await phone.close();
 
-    /* ---------- console hygiene ---------- */
     console.log('\nConsole');
     const real = errors.filter((e) => !/favicon/i.test(e));
     ok('no console errors across the whole run', real.length === 0,
@@ -817,7 +752,6 @@ async function installStubs(page, osm) {
   process.exit(failures ? 1 : 0);
 })();
 
-/** Playwright's bundled Chromium moves around between images. */
 async function findChromium() {
   const roots = [process.env.PLAYWRIGHT_BROWSERS_PATH, '/opt/pw-browsers'].filter(Boolean);
   for (const root of roots) {
@@ -833,9 +767,9 @@ async function findChromium() {
         try {
           await readFile(path, { flag: 'r' });
           return path;
-        } catch { /* keep looking */ }
+        } catch { }
       }
     }
   }
-  return undefined; // fall back to Playwright's own resolution
+  return undefined;
 }

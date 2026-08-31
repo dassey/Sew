@@ -1,12 +1,3 @@
-/**
- * IndexedDB store for imported datasets.
- *
- * Settings live in localStorage, but a county building layer is megabytes of
- * geometry — far past that quota, and no business being in a share link.
- * IndexedDB keeps uploads across reloads without either problem. Everything
- * stays on the machine; nothing is uploaded.
- */
-
 const DB_NAME = 'skyline-forge';
 const STORE = 'imports';
 const VERSION = 1;
@@ -45,7 +36,6 @@ function transact(mode, work) {
   );
 }
 
-/** All of these swallow failures: a lost upload is a nuisance, not a crash. */
 export async function saveDataset(dataset) {
   try {
     await transact('readwrite', (store) => store.put(dataset));

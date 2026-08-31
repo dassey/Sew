@@ -1,14 +1,3 @@
-/**
- * Tests for bring-your-own-data import.
- *
- * Fixtures are generated rather than checked in: a shapefile is written byte by
- * byte here, in real State Plane coordinates with a real .prj, so the reader is
- * tested against the mixed-endian header, the reversed ring winding and the
- * reprojection all at once — the three things that actually go wrong.
- *
- *   node test/import.mjs
- */
-
 import { createZip } from '../js/export/zip.js';
 import { readShp, readDbf, combine, ringsToPolygons } from '../js/data/import/shapefile.js';
 import { readGeoJson } from '../js/data/import/geojson.js';
@@ -33,24 +22,11 @@ function near(label, actual, expected, tol) {
   ok(label, Math.abs(actual - expected) <= tol, `got ${actual}, want ${expected} ±${tol}`);
 }
 
-/* ================================================================== *
- * Fixture writers
- * ================================================================== */
-
-/**
- * Write a polygon shapefile.
- *
- * @param {Array<{outer: Array<[number, number]>, holes?: Array}>} polygons
- *   Rings are passed counter-clockwise for outers and clockwise for holes;
- *   this writer flips them, because the shapefile spec is the other way round.
- */
 function writeShp(polygons) {
   const records = [];
   let bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
 
   polygons.forEach((poly, index) => {
-    // Callers pass GeoJSON winding (outer counter-clockwise, holes clockwise);
-    // the shapefile spec is the exact opposite, so both get flipped.
     const rings = [reverse(poly.outer), ...(poly.holes || []).map(reverse)];
     const pointCount = rings.reduce((n, r) => n + r.length, 0);
     const content = 44 + 4 * rings.length + 16 * pointCount;
@@ -59,7 +35,7 @@ function writeShp(polygons) {
 
     view.setInt32(0, index + 1, false);
     view.setInt32(4, content / 2, false);
-    view.setInt32(8, 5, true); // Polygon
+    view.setInt32(8, 5, true);
 
     const box = ringBounds(rings);
     bounds = {
@@ -127,7 +103,6 @@ function ringBounds(rings) {
   return { minX, minY, maxX, maxY };
 }
 
-/** dBase III table. Fields are {name, type, length}. */
 function writeDbf(fields, rows) {
   const headerLength = 32 + 32 * fields.length + 1;
   const recordLength = 1 + fields.reduce((n, f) => n + f.length, 0);
@@ -135,7 +110,7 @@ function writeDbf(fields, rows) {
   const view = new DataView(file.buffer);
 
   file[0] = 0x03;
-  file[1] = 125; file[2] = 1; file[3] = 1; // 2025-01-01
+  file[1] = 125; file[2] = 1; file[3] = 1;
   view.setUint32(4, rows.length, true);
   view.setUint16(8, headerLength, true);
   view.setUint16(10, recordLength, true);
@@ -161,7 +136,6 @@ function writeDbf(fields, rows) {
     for (const field of fields) {
       const raw = row[field.name];
       const text = raw === null || raw === undefined ? '' : String(raw);
-      // Numerics are right-aligned in the fixed-width slot, text left-aligned.
       const padded = field.type === 'N' ? text.padStart(field.length) : text.padEnd(field.length);
       file.set(ascii(padded, field.length), at);
       at += field.length;
@@ -171,20 +145,14 @@ function writeDbf(fields, rows) {
   return file;
 }
 
-/* ================================================================== *
- * Fixtures
- * ================================================================== */
-
-// NAD83 / Missouri West — a plausible county projection, in metres.
 const MO_WEST_PRJ =
-  'PROJCS["NAD83 / Missouri West",GEOGCS["NAD83",DATUM["North_American_Datum_1983",' +
+  'PROJCS["NAD83 / UTM zone 18N",GEOGCS["NAD83",DATUM["North_American_Datum_1983",' +
   'SPHEROID["GRS 1980",6378137,298.257222101]],PRIMEM["Greenwich",0],' +
   'UNIT["degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],' +
-  'PARAMETER["latitude_of_origin",36.1666666666667],PARAMETER["central_meridian",-94.5],' +
-  'PARAMETER["scale_factor",0.999941177],PARAMETER["false_easting",850000],' +
+  'PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",-75],' +
+  'PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],' +
   'PARAMETER["false_northing",0],UNIT["metre",1]]';
 
-/** A grid of little buildings around a projected origin, each a different height. */
 function buildingGrid(originX, originY, cols, rows, step = 30, size = 14) {
   const polygons = [];
   const attributes = [];
@@ -193,7 +161,6 @@ function buildingGrid(originX, originY, cols, rows, step = 30, size = 14) {
       const x = originX + c * step;
       const y = originY + r * step;
       polygons.push({
-        // Counter-clockwise, as a caller would naturally write it.
         outer: [[x, y], [x + size, y], [x + size, y + size], [x, y + size], [x, y]],
       });
       attributes.push({
@@ -207,7 +174,7 @@ function buildingGrid(originX, originY, cols, rows, step = 30, size = 14) {
 }
 
 async function shapefileZip({ withPrj = true, deflate = false } = {}) {
-  const { polygons, attributes } = buildingGrid(850000, 336500, 6, 6);
+  const { polygons, attributes } = buildingGrid(500000, 4511000, 6, 6);
   const shp = writeShp(polygons);
   const dbf = writeDbf(
     [
@@ -231,10 +198,6 @@ async function shapefileZip({ withPrj = true, deflate = false } = {}) {
   return deflateZip(entries);
 }
 
-/**
- * Build a DEFLATE-compressed zip so the reader's inflate path is exercised;
- * `createZip` only ever stores.
- */
 async function deflateZip(entries) {
   const crcTable = (() => {
     const t = new Uint32Array(256);
@@ -271,7 +234,7 @@ async function deflateZip(entries) {
     view.setUint32(at, 0x04034b50, true);
     view.setUint16(at + 4, 20, true);
     view.setUint16(at + 6, 0, true);
-    view.setUint16(at + 8, 8, true); // deflate
+    view.setUint16(at + 8, 8, true);
     view.setUint32(at + 14, e.crc, true);
     view.setUint32(at + 18, e.packed.length, true);
     view.setUint32(at + 22, e.raw.length, true);
@@ -304,10 +267,6 @@ async function deflateZip(entries) {
   return out;
 }
 
-/* ================================================================== *
- * Tests
- * ================================================================== */
-
 console.log('\nZIP reader');
 {
   const stored = await shapefileZip();
@@ -325,7 +284,7 @@ console.log('\nZIP reader');
 
 console.log('\nShapefile reader');
 {
-  const { polygons, attributes } = buildingGrid(850000, 336500, 3, 2);
+  const { polygons, attributes } = buildingGrid(500000, 4511000, 3, 2);
   const shp = readShp(writeShp(polygons));
   ok('reads every record', shp.shapes.length === 6, `${shp.shapes.length}`);
   ok('records are areas', shp.shapes.every((s) => s.kind === 'area'));
@@ -349,8 +308,6 @@ console.log('\nShapefile reader');
   ok('geometry and attributes line up', features.length === 6 &&
     features[3].properties.ADDRESS === '103 Test Street');
 
-  // Ring winding: the writer flipped to shapefile order, so the reader must
-  // recognise the outer ring despite it now being clockwise.
   const polys = ringsToPolygons(features[0].parts);
   ok('a clockwise ring is read as an outer ring', polys.length === 1 && polys[0].holes.length === 0);
 
@@ -369,15 +326,14 @@ console.log('\nProjected shapefile end to end');
   const dataset = await importFile(new File([zip], 'clay-county-buildings.zip'));
 
   ok('detects the format', dataset.format === 'Shapefile', dataset.format);
-  ok('reads the projection name', dataset.crsName === 'NAD83 / Missouri West', String(dataset.crsName));
+  ok('reads the projection name', dataset.crsName === 'NAD83 / UTM zone 18N', String(dataset.crsName));
   ok('reprojects to lat/lon', dataset.reprojected === true);
   ok('imports every feature', dataset.count === 36, `${dataset.count}`);
   ok('classifies as areas', dataset.kind === 'area', dataset.kind);
 
-  // 850000E is the false easting, i.e. the central meridian at -94.5.
-  near('longitude lands on the central meridian', dataset.bbox.minLon, -94.5, 0.01);
-  ok('latitude lands near Kansas City',
-    dataset.bbox.minLat > 39 && dataset.bbox.minLat < 39.4, `${dataset.bbox.minLat}`);
+  near('longitude lands on the central meridian', dataset.bbox.minLon, -75, 0.01);
+  ok('latitude lands where the northing says',
+    dataset.bbox.minLat > 40.6 && dataset.bbox.minLat < 40.9, `${dataset.bbox.minLat}`);
   ok('the footprint is metres across, not degrees',
     (dataset.bbox.maxLon - dataset.bbox.minLon) < 0.01);
 
@@ -415,17 +371,17 @@ console.log('\nGeoJSON');
         geometry: {
           type: 'Polygon',
           coordinates: [
-            [[-94.58, 39.2], [-94.579, 39.2], [-94.579, 39.201], [-94.58, 39.201], [-94.58, 39.2]],
-            [[-94.5798, 39.2004], [-94.5796, 39.2004], [-94.5796, 39.2006], [-94.5798, 39.2006], [-94.5798, 39.2004]],
+            [[-73.98, 40.73], [-73.979, 40.73], [-73.979, 40.731], [-73.98, 40.731], [-73.98, 40.73]],
+            [[-73.9798, 40.7304], [-73.9796, 40.7304], [-73.9796, 40.7306], [-73.9798, 40.7306], [-73.9798, 40.7304]],
           ],
         },
       },
       {
         type: 'Feature',
         properties: { name: 'Path' },
-        geometry: { type: 'LineString', coordinates: [[-94.58, 39.2], [-94.575, 39.205]] },
+        geometry: { type: 'LineString', coordinates: [[-73.98, 40.73], [-73.975, 40.735]] },
       },
-      { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [-94.577, 39.202] } },
+      { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [-73.977, 40.732] } },
     ],
   };
   const parsed = readGeoJson(JSON.stringify(geo));
@@ -435,20 +391,18 @@ console.log('\nGeoJSON');
   const dataset = await importFile(new File([JSON.stringify(geo)], 'blocks.geojson'));
   ok('mixed geometry is reported as mixed', dataset.kind === 'mixed', dataset.kind);
   ok('lat/lon data is not reprojected', dataset.reprojected === false);
-  near('bbox tracks the data', dataset.bbox.maxLat, 39.205, 1e-6);
+  near('bbox tracks the data', dataset.bbox.maxLat, 40.735, 1e-6);
 
-  // A third ordinate must not derail anything.
-  const withZ = { ...geo, features: [{ ...geo.features[2], geometry: { type: 'Point', coordinates: [-94.577, 39.202, 271.5] } }] };
+  const withZ = { ...geo, features: [{ ...geo.features[2], geometry: { type: 'Point', coordinates: [-73.977, 40.732, 271.5] } }] };
   const zDataset = await importFile(new File([JSON.stringify(withZ)], 'z.geojson'));
-  ok('altitude ordinates are ignored', zDataset.count === 1 && zDataset.bbox.maxLat === 39.202);
+  ok('altitude ordinates are ignored', zDataset.count === 1 && zDataset.bbox.maxLat === 40.732);
 
-  // Pre-RFC7946 files still name a projected CRS; it has to be honoured.
   const projected = {
     type: 'FeatureCollection',
     crs: { type: 'name', properties: { name: 'urn:ogc:def:crs:EPSG::26997' } },
     features: [{
       type: 'Feature', properties: {},
-      geometry: { type: 'Polygon', coordinates: [[[850000, 336500], [850020, 336500], [850020, 336520], [850000, 336520], [850000, 336500]]] },
+      geometry: { type: 'Polygon', coordinates: [[[500000, 4511000], [500020, 4511000], [500020, 4511020], [500000, 4511020], [500000, 4511000]]] },
     }],
   };
   ok('a projected crs member is detected', readGeoJson(JSON.stringify(projected)).crs === 'EPSG:26997');
@@ -465,7 +419,6 @@ console.log('\nHeight mapping');
   near('nonsense falls back', heightInMetres({ H: 'tall' }, mapping), 8, 1e-9);
   near('scale is applied', heightInMetres({ H: 10 }, { ...mapping, heightScale: 2 }), 20, 1e-9);
 
-  // Feet look like metres by name alone, so the range has to decide.
   const feetish = [{ name: 'HEIGHT', type: 'number', min: 12, max: 240, filled: 100, sample: 30 }];
   ok('a field topping 240 is guessed as feet', guessHeightMapping(feetish).unit === 'ft');
   const storeys = [{ name: 'NUM_FLOORS', type: 'number', min: 1, max: 4, filled: 100, sample: 2 }];
@@ -479,7 +432,6 @@ console.log('\nMerging into the OSM feature set');
   const dataset = await importFile(new File([zip], 'buildings.zip'));
   dataset.mapping = { ...defaultMapping(dataset), heightField: 'HEIGHT', heightUnit: 'm', mode: 'add' };
 
-  // A pretend OSM extract: one boxy building inside the imported area, one far away.
   const inside = dataset.bbox;
   const osm = {
     buildings: [
@@ -537,7 +489,6 @@ console.log('\nImported data reaches the printed model');
   ok('imported buildings are extruded', Boolean(buildings) && model.stats.buildingCount > 20,
     `${model.stats.buildingCount} buildings`);
 
-  // The whole point: heights vary, unlike a flat OSM suburb.
   const zs = new Set();
   for (let i = 2; i < buildings.positions.length; i += 3) zs.add(Math.round(buildings.positions[i] * 10));
   ok('the printed heights actually vary', zs.size > 5, `${zs.size} distinct z values`);

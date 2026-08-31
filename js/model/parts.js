@@ -1,16 +1,3 @@
-/**
- * The parts a finished model is made of, and the settings that shape it.
- *
- * Each part becomes: one mesh in the preview, one coloured object in the 3MF,
- * one material in the OBJ, and one file in the per-part STL bundle. Keeping
- * that mapping one-to-one is what makes multi-material printing work without
- * any manual splitting in the slicer.
- *
- * Order matters twice over: it is the paint order in the preview, and it is the
- * priority order used to carve the plate into disjoint regions — earlier parts
- * win the ground they stand on.
- */
-
 export const PARTS = [
   { id: 'route',      label: 'Route',        color: '#e0483e', hint: 'Highlighted path' },
   { id: 'buildings',  label: 'Buildings',    color: '#f2ede3', hint: 'Extruded footprints' },
@@ -23,8 +10,6 @@ export const PARTS = [
   { id: 'green',      label: 'Parks',        color: '#6ba368', hint: 'Parks, forest and grass' },
   { id: 'ground',     label: 'Ground',       color: '#d8d2c2', hint: 'Everything not covered' },
   { id: 'frame',      label: 'Frame',        color: '#2f3640', hint: 'Border around the plate' },
-  // Named for the whole bar, not just the text: this checkbox is how most
-  // people will look to remove the nameplate, so it has to say so.
   { id: 'label',      label: 'Nameplate',    color: '#f4f1ea', hint: 'Name bar below the map' },
 ];
 
@@ -34,11 +19,6 @@ export function partById(id) {
   return PARTS.find((p) => p.id === id);
 }
 
-/**
- * Settings are deliberately flat-ish and JSON-serialisable: the whole object
- * crosses into the worker, gets saved to localStorage, and packs into a share
- * link.
- */
 export const DEFAULT_SETTINGS = {
   location: {
     lat: 40.7484,
@@ -50,12 +30,12 @@ export const DEFAULT_SETTINGS = {
     type: 'circle',
     rotation: 0,
     aspect: 1.5,
-    custom: null, // [[lat, lon], …] when type === 'custom'
+    custom: null,
   },
 
   size: {
-    areaMetres: 1500, // real-world span across the plate
-    printMm: 160,     // printed span across the plate
+    areaMetres: 1500,
+    printMm: 160,
   },
 
   layers: {
@@ -71,7 +51,6 @@ export const DEFAULT_SETTINGS = {
     nameplate: true,
   },
 
-  // All millimetres. Layer heights are measured from the top of the base slab.
   heights: {
     base: 2.0,
     waterDepth: 0.7,
@@ -88,13 +67,13 @@ export const DEFAULT_SETTINGS = {
   },
 
   print: {
-    minRoadWidthMm: 0.85,  // below this a street vanishes into a single extrusion
+    minRoadWidthMm: 0.85,
     roadWidthScale: 1.0,
-    minFeatureMm2: 0.5,    // slivers smaller than this are dropped
+    minFeatureMm2: 0.5,
     simplifyMm: 0.1,
     frameWidthMm: 4,
     splitMajorRoads: true,
-    buildingDetail: 'simple', // 'simple' | 'parts'
+    buildingDetail: 'simple',
     maxTrees: 400,
     treeRadiusMm: 0.8,
     treeHeightMm: 2.4,
@@ -118,8 +97,8 @@ export const DEFAULT_SETTINGS = {
     profile: 'auto',
     widthMetres: 8,
     minWidthMm: 1.4,
-    waypoints: [],   // [{lat, lon, label}]
-    points: null,    // [[lat, lon], …] once resolved
+    waypoints: [],
+    points: null,
     source: '',
     distance: 0,
     duration: 0,
@@ -128,7 +107,6 @@ export const DEFAULT_SETTINGS = {
   colors: Object.fromEntries(PARTS.map((p) => [p.id, p.color])),
 };
 
-/** Deep merge that tolerates older saved settings missing new keys. */
 export function mergeSettings(base, patch) {
   if (!patch || typeof patch !== 'object') return structuredClone(base);
   const out = Array.isArray(base) ? [] : {};
@@ -141,7 +119,6 @@ export function mergeSettings(base, patch) {
       out[key] = p === undefined || p === null ? structuredClone(b) : p;
     }
   }
-  // Carry through keys the defaults do not know about (e.g. custom colours).
   for (const key of Object.keys(patch)) {
     if (!(key in out)) out[key] = patch[key];
   }

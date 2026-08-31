@@ -1,12 +1,3 @@
-/**
- * The 2D picker: choose *where*, and how much of it.
- *
- * The plate outline is drawn on the map as a hole punched through a dimming
- * overlay, so what you see lit is exactly what gets printed. Scrolling zooms the
- * map as normal; shift-scrolling resizes the plate, and dragging it moves the
- * centre — both without leaving the map to hunt for a slider.
- */
-
 import { createProjection } from './core/projection.js';
 import { buildShapeRing } from './core/shapes.js';
 
@@ -49,10 +40,6 @@ const WORLD_RING = [
 ];
 
 export class MapPicker {
-  /**
-   * @param {HTMLElement} element
-   * @param {object} handlers {onChange, onWaypoints, onCustomShape, onModeChange}
-   */
   constructor(element, handlers = {}) {
     this.handlers = handlers;
     this.mode = 'pan';
@@ -102,8 +89,6 @@ export class MapPicker {
     this._wireInteractions(element);
   }
 
-  /* ---------------- basemap ---------------- */
-
   setBasemap(id) {
     const def = BASEMAPS.find((b) => b.id === id) || BASEMAPS[0];
     if (this.tileLayer) this.map.removeLayer(this.tileLayer);
@@ -117,8 +102,6 @@ export class MapPicker {
     if (this.maskLayer) this.maskLayer.bringToFront();
     this.basemapId = def.id;
   }
-
-  /* ---------------- handles ---------------- */
 
   _buildHandles() {
     const dot = (cls) =>
@@ -158,7 +141,6 @@ export class MapPicker {
   }
 
   _wireInteractions(element) {
-    // Shift-scroll resizes the plate instead of zooming the map.
     element.addEventListener(
       'wheel',
       (event) => {
@@ -177,7 +159,6 @@ export class MapPicker {
       { passive: false, capture: true }
     );
 
-    // Dragging anywhere inside the lit area moves the plate.
     let dragging = null;
     this.outlineLayer.on('mousedown', (e) => {
       if (this.mode !== 'pan') return;
@@ -233,15 +214,11 @@ export class MapPicker {
     this.handlers.onChange?.(this.settings, { live: false });
   }
 
-  /* ---------------- drawing the plate ---------------- */
-
-  /** @param {object} settings the live settings object (mutated in place) */
   update(settings) {
     this.settings = settings;
     this._redraw();
   }
 
-  /** Plate outline as [lat, lon] pairs, derived from the same code the mesh uses. */
   outlineLatLngs() {
     const s = this.settings;
     if (!s) return [];
@@ -274,13 +251,11 @@ export class MapPicker {
     const { lat, lon } = this.settings.location;
     this.centreHandle.setLatLng([lat, lon]);
 
-    // Park the size handle due east at the plate's inscribed radius.
     const radiusM = this.settings.size.areaMetres / 2;
     const east = L.latLng(lat, lon).toBounds(radiusM * 2).getEast();
     this.sizeHandle.setLatLng([lat, east]);
   }
 
-  /** Ease the map so the plate fills a comfortable share of the viewport. */
   focus(animate = true) {
     const ring = this.outlineLatLngs();
     if (!ring.length) return;
@@ -290,7 +265,6 @@ export class MapPicker {
       : this.map.fitBounds(bounds);
   }
 
-  /** Resize the plate to match what is currently on screen. */
   matchViewport() {
     if (!this.settings) return;
     const bounds = this.map.getBounds();
@@ -320,8 +294,6 @@ export class MapPicker {
     );
   }
 
-  /* ---------------- modes ---------------- */
-
   setMode(mode) {
     this.mode = mode;
     this.map.getContainer().classList.toggle('mode-route', mode === 'route');
@@ -346,8 +318,6 @@ export class MapPicker {
     this.setMode('pan');
     return points;
   }
-
-  /* ---------------- route waypoints ---------------- */
 
   addWaypoint(lat, lon) {
     this.waypoints.push({ lat, lon });

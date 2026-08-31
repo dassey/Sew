@@ -1,12 +1,3 @@
-/**
- * Model-building worker.
- *
- * Boolean polygon operations on a dense city take seconds, and doing that on
- * the main thread would freeze the map and the 3D view mid-drag. Everything
- * from parsed OSM features to finished triangle buffers happens here; the
- * buffers are transferred rather than copied on the way back.
- */
-
 import { buildModel } from './build.js';
 
 let currentJob = 0;
@@ -23,7 +14,6 @@ self.onmessage = (event) => {
   currentJob = jobId;
 
   const post = (message) => {
-    // A newer job supersedes this one — stop reporting for the stale build.
     if (jobId !== currentJob) return false;
     self.postMessage(message);
     return true;
